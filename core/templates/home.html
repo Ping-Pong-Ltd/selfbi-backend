@@ -2,8 +2,8 @@
 {% block content %}
 
 <!-- Write html code here -->
-<h1> Hello, Server.</h1>
+<h3 id="greeting"> </h1>
 
-<script src="{{ url_for('static', filename='/assets/js/main.js') }}" ></script>
+<script src="{{ url_for('static', filename='/assets/js/main.js') }}" type="module"></script>
 
 {% endblock content%}
