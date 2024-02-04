@@ -1,4 +1,5 @@
 from flask import Flask
+from flask_cors import CORS
 from cryptography.fernet import Fernet
 import os
 
@@ -6,6 +7,7 @@ import os
 # fernet = Fernet(os.getenv("FERNET_KEY"))
 
 app = Flask(__name__)
+CORS(app)
 
 app.config['SECRET_KEY'] = os.getenv("SQL_ACLCHEMY_KEY")
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
