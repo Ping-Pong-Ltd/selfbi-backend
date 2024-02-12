@@ -1,3 +1,8 @@
+import sys
+import os
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import asyncio
 import configparser
 from msgraph.generated.models.o_data_errors.o_data_error import ODataError
@@ -8,24 +13,26 @@ import requests
 base_url = 'https://graph.microsoft.com/v1.0'
 
 config = configparser.ConfigParser()
-config.read(['config.cfg', 'config.dev.cfg'])
+config.read(['../config.cfg', '../config.local.cfg'])
 azure_settings = config['azure']
 graph: Graph = Graph(azure_settings)
 
 
 async def list_projects():
-    endpoint = '/drive/root:/SelfBI:/'
+    endpoint = '/drive/root:/SelfBI:/children'
 
     url = base_url + endpoint
 
     access_token = await graph.get_app_only_token()
-    print(access_token)
     payload = {}
     headers = {
         'Authorization': 'Bearer ' + access_token
     }
 
     response = requests.request("GET", url, headers=headers, data=payload)
+    if response.status_code == 404:
+        print('No Projects')
+
     data = json.loads(response.text)['value']
 
     if not data or len(data) == 0:
@@ -92,6 +99,6 @@ async def list_files(project_name: str = None, folder_name: str = None):
     for file in data:
         print(file['name'])
 
-# asyncio.run(list_projects())
-# asyncio.run(list_folders(project_name='ExcelDashboar'))
-# asyncio.run(list_files(project_name='ExcelDashboar', folder_name='Rates'))
+asyncio.run(list_projects())
+asyncio.run(list_folders(project_name='ExcelDashboard'))
+asyncio.run(list_files(project_name='ExcelDashboard', folder_name='Rates'))
