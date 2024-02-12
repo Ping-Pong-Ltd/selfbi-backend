@@ -1,0 +1,4 @@
+[azure]
+clientId = client_id
+tenantId = tenant_id
+clientSecret = client_secret
