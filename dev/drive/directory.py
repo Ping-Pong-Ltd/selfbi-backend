@@ -14,7 +14,7 @@ graph: Graph = Graph(azure_settings)
 
 
 async def list_projects():
-    endpoint = '/drive/root:/SelfBI:/'
+    endpoint = '/drive/root:/SelfBI:/children'
 
     url = base_url + endpoint
 
@@ -26,6 +26,7 @@ async def list_projects():
     }
 
     response = requests.request("GET", url, headers=headers, data=payload)
+    print(response.text)
     data = json.loads(response.text)['value']
 
     if not data or len(data) == 0:
@@ -90,8 +91,11 @@ async def list_files(project_name: str = None, folder_name: str = None):
         return
 
     for file in data:
-        print(file['name'])
+        # print(file['name'])
+        file_dict = {'name': file['name'], 'cTag': file['cTag']}
+        file_dict = {'cTag': file_dict['cTag'][file_dict['cTag'].index('{')+1:file_dict['cTag'].index('}')], 'name': file_dict['name']}
+        print(file_dict)
 
 # asyncio.run(list_projects())
-# asyncio.run(list_folders(project_name='ExcelDashboar'))
-# asyncio.run(list_files(project_name='ExcelDashboar', folder_name='Rates'))
+# asyncio.run(list_folders(project_name='ExcelDashboard'))
+# asyncio.run(list_files(project_name='ExcelDashboard', folder_name='Rates'))
