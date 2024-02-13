@@ -904,3 +904,4 @@ FodyWeavers.xsd
 
 *.pyc
 *.cfg
+dev/test_garbage
