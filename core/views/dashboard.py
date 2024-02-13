@@ -1,23 +1,16 @@
-import sys
-import os
+from flask import Blueprint, jsonify, request
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-import asyncio
-import configparser
 from msgraph.generated.models.o_data_errors.o_data_error import ODataError
-from graph import Graph
 import json
 import requests
+from core import graph
+
+
+dashboard = Blueprint('dashboard', __name__)
 
 base_url = 'https://graph.microsoft.com/v1.0'
 
-config = configparser.ConfigParser()
-config.read(['../config.cfg', '../config.local.cfg'])
-azure_settings = config['azure']
-graph: Graph = Graph(azure_settings)
-
-
+@dashboard.route('/projects')
 async def list_projects():
     endpoint = '/drive/root:/SelfBI:/children'
 
@@ -40,11 +33,18 @@ async def list_projects():
         print('No projects found')
         return
 
-    for project in data:
-        print(project['name'])
+    response_data = []
+    for counter, project in enumerate(data, start=1):
+        temp_dict = {'id': counter, 'name': project['name']}
+        response_data.append(temp_dict)
+
+    return jsonify(response_data)
 
 
-async def list_folders(project_name: str = None):
+@dashboard.route('/folders')
+async def list_folders():
+    project_name = request.args.get('project_name', default=None, type=str)
+
     if not project_name:
         print('Project name is required')
         return
@@ -68,11 +68,18 @@ async def list_folders(project_name: str = None):
         print('No folders found')
         return
 
+    folders = []
     for folder in data:
-        print(folder['name'])
+        folders.append(folder['name'])
+
+    return jsonify({project_name: folders})
 
 
-async def list_files(project_name: str = None, folder_name: str = None):
+@dashboard.route('/files')
+async def list_files():
+    project_name = request.args.get('project_name', default=None, type=str)
+    folder_name = request.args.get('folder_name', default=None, type=str)
+
     if not project_name or not folder_name:
         print('Project name and folder name are required')
         return
@@ -97,12 +104,11 @@ async def list_files(project_name: str = None, folder_name: str = None):
         print('No files found')
         return
 
+    excel_file_dict = []
     for file in data:
         file_dict = {'name': file['name'], 'cTag': file['cTag']}
-        file_dict = {'cTag': file_dict['cTag'][file_dict['cTag'].index('{')+1:file_dict['cTag'].index('}')], 'name': file_dict['name']}
-        print(file_dict)
+        excel_file_dict.append({'cTag': file_dict['cTag'][file_dict['cTag'].index(
+            '{')+1:file_dict['cTag'].index('}')], 'name': file_dict['name']})
 
-if __name__ == '__main__':
-    asyncio.run(list_projects())
-    asyncio.run(list_folders(project_name='ExcelDashboard'))
-    asyncio.run(list_files(project_name='ExcelDashboard', folder_name='Rates'))
+    return jsonify(excel_file_dict)
+
