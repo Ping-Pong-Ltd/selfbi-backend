@@ -19,9 +19,9 @@ config.read(['config.cfg'])
 azure_settings = config['azure']
 graph: Graph = Graph(azure_settings)
 
-from core.views import home
-from core.views import dashboard
+from core.views import home, dashboard, excel
 
 app.register_blueprint(home.home)
 app.register_blueprint(dashboard.dashboard)
+app.register_blueprint(excel.excel)
 
