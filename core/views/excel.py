@@ -43,10 +43,11 @@ async def upload_excel():
 
 @excel.route('/copy_excel', methods=['GET','POST'])
 async def copy_excel():
-    item_id = request.files['item_id']
-    file_name = request.files['file_name']
+    item_id = request.form['item_id']
+    file_name = request.form['file_name']
     url = f"{base_url}/sites/{site_id}/drives/{drive_id}/items/{item_id}/copy"
-
+    if not (item_id or file_name):
+        return jsonify("Item ID and file name are required")
     
     access_token = await graph.get_app_only_token()
 
@@ -93,14 +94,16 @@ async def copy_excel():
         sandbox_id = create_data['id']
         
     payload = {
-        "name": file_name,
         "parentReference": {
             "id": sandbox_id
-        }
+        },
+        "name": file_name
     }
 
-    response = requests.request("POST", url, headers=headers, data=payload)
+    response = requests.request("POST", url, headers=headers, data=json.dumps(payload))
     if response.status_code == 404:
         return jsonify("File not found")
+    
+    msg = f"File {file_name} has been copied to the sandbox folder"
 
-    return jsonify(response.text)
+    return jsonify(msg)
