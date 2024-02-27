@@ -10,6 +10,7 @@ dashboard = Blueprint('dashboard', __name__)
 
 base_url = 'https://graph.microsoft.com/v1.0'
 
+
 @dashboard.route('/projects')
 async def list_projects():
     endpoint = '/drive/root:/SelfBI:/children'
@@ -104,11 +105,17 @@ async def list_files():
         print('No files found')
         return
 
+    print(data)
+
     excel_file_dict = []
     for file in data:
         file_dict = {'name': file['name'], 'cTag': file['cTag']}
-        excel_file_dict.append({'cTag': file_dict['cTag'][file_dict['cTag'].index(
-            '{')+1:file_dict['cTag'].index('}')], 'name': file_dict['name']})
+        excel_file_dict.append({
+            'cTag': file_dict['cTag'][file_dict['cTag'].index('{')+1:file_dict['cTag'].index('}')], 
+            'name': file_dict['name'],
+            'created_by': file['createdBy']['user']['displayName'],
+            'last_modified_on': file['fileSystemInfo']['lastModifiedDateTime'],
+            'last_modified_by': file['lastModifiedBy']['user']['displayName']
+        })
 
     return jsonify(excel_file_dict)
-
