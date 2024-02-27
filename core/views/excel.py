@@ -1,3 +1,4 @@
+import json
 import os 
 from dotenv import load_dotenv
 
@@ -40,26 +41,69 @@ async def upload_excel():
 
 
 
-@excel.route('/copy_excel', methods=['POST'])
+@excel.route('/copy_excel', methods=['GET','POST'])
 async def copy_excel():
-    item_id = request.files['item_id']
-    file_name = request.files['file_name']
+    item_id = request.form['item_id']
+    file_name = request.form['file_name']
     url = f"{base_url}/sites/{site_id}/drives/{drive_id}/items/{item_id}/copy"
-
-    payload = {
-        "parentReference": {
-            "driveId": drive_id,
-            "id": item_id
-        },
-        "name": file_name
-    }
+    if not (item_id or file_name):
+        return jsonify("Item ID and file name are required")
+    
     access_token = await graph.get_app_only_token()
 
     headers = {
     'Content-Type': 'application/json',
     'Authorization': 'Bearer ' + access_token
     }
+    
+    # Get the item details
+    item_endpoint = '/drive/items/' + item_id
+    item_url = base_url + item_endpoint
+    item_response = requests.request("GET", item_url, headers=headers)
+    item_data = json.loads(item_response.text)
+    
+    # Get the parentReference
+    parent_id = item_data['parentReference']['id']
 
-    response = requests.request("POST", url, headers=headers, data=payload)
+    # List all items in the parent folder
+    list_endpoint = '/drive/items/' + parent_id + '/children'
+    list_url = base_url + list_endpoint
+    list_response = requests.request("GET", list_url, headers=headers)
+    list_data = json.loads(list_response.text)
 
-    return jsonify(response.text)
+    # Check if 'sandbox' folder exists
+    sandbox_id = None
+    for item in list_data['value']:
+        if item['name'] == 'Sandbox' and item['folder']:
+            sandbox_id = item['id']
+            break
+
+    # If 'sandbox' folder doesn't exist, create it
+    if sandbox_id is None:
+        create_endpoint = '/drive/items/' + parent_id + '/children'
+        create_url = base_url + create_endpoint
+        create_payload = {
+            "name": "Sandbox",
+            "folder": { },
+            "@mircrosoft.graph.conflictBehavior": "fail"
+        }
+        create_response = requests.request("POST", create_url, headers=headers, data=json.dumps(create_payload))
+        print(create_response)
+        create_data = json.loads(create_response.text)
+        print(create_data)
+        sandbox_id = create_data['id']
+        
+    payload = {
+        "parentReference": {
+            "id": sandbox_id
+        },
+        "name": file_name
+    }
+
+    response = requests.request("POST", url, headers=headers, data=json.dumps(payload))
+    if response.status_code == 404:
+        return jsonify("File not found")
+    
+    msg = f"File {file_name} has been copied to the sandbox folder"
+
+    return jsonify(msg)
