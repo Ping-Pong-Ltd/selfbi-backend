@@ -903,3 +903,5 @@ FodyWeavers.xsd
 # Additional files built by Visual Studio
 
 *.pyc
+*.cfg
+dev/test_garbage
