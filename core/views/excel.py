@@ -18,8 +18,12 @@ drive_id = os.getenv("DRIVE_ID")
 
 @excel.route('/upload_excel', methods=['POST'])
 async def upload_excel():
+    project_id = request.args.get('project_id', default=None, type=str)
 
-    relative_path = "SelfBI/ExcelDashboard/Credits/Sandbox"
+    if not project_id:
+        return jsonify("Project ID is required")
+
+    relative_path = "SelfBI/{project_id}/Sandbox"
     file_name = request.args.get('file_name', default=None, type=str)
     url = f"{base_url}/sites/{site_id}/drives/{drive_id}/root:/{relative_path}/{file_name}:/content"
 
@@ -40,11 +44,36 @@ async def upload_excel():
     return response.json()
 
 
+@excel.route('/download_file', methods=['GET'])
+async def download_file():
+    item_id = request.args.get('item_id', default=None, type=str)
 
-@excel.route('/copy_excel', methods=['GET','POST'])
+    if not item_id:
+        return jsonify("Item ID is required")
+
+    url = f"{base_url}/drives/{drive_id}/items/{item_id}/content"
+
+    access_token = await graph.get_app_only_token()
+
+    headers = {
+    'Authorization': 'Bearer ' + access_token
+    }
+
+    response = requests.request("GET", url, headers=headers, allow_redirects=False)
+
+    if response.status_code == 302:
+        return response.headers['Location']
+
+    return response.json()
+
+@excel.route('/copy_excel', methods=['POST'])
 async def copy_excel():
     item_id = request.form['item_id']
     file_name = request.form['file_name']
+
+    if not (item_id or file_name):
+        return jsonify("Item ID and file name are required")
+
     url = f"{base_url}/sites/{site_id}/drives/{drive_id}/items/{item_id}/copy"
     if not (item_id or file_name):
         return jsonify("Item ID and file name are required")
