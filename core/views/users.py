@@ -11,8 +11,8 @@ users = Blueprint('users', __name__)
 schema = {
     "type": "object",
     "properties": {
-        "email": {"type": "string", "format": "email"},
-        "password": {"type": "string", "minLength": 8}
+        "email": {"type": "string", "format": "email", "maxLength": 120},
+        "password": {"type": "string", "minLength": 8, "maxLength": 20}
     },
     "required": ["email", "password"]
 }
@@ -28,11 +28,10 @@ def register():
         return jsonify({'message': 'Invalid data format', 'error': str(e)})
 
     # Continue with the registration process
-    hash_password = generate_password_hash(data['password'])
+    hash_password = generate_password_hash(data['password'])[:256]
     new_user = User(email=data['email'], password=hash_password)
     db.session.add(new_user)
     db.session.commit()
-    
     
     return jsonify({'message': 'Register'})
 
