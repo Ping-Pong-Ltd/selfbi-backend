@@ -14,6 +14,16 @@ from core.graph import Graph
 load_dotenv(".env")
 login_manager = LoginManager()
 db = SQLAlchemy()
+config = {
+    "azure": {
+        "tenantId": os.getenv("AZURE_TENANT_ID"),
+        "clientId": os.getenv("AZURE_CLIENT_ID"),
+        "clientSecret": os.getenv("AZURE_CLIENT_SECRET"),
+    }
+}
+azure_settings = config["azure"]
+graph: Graph = Graph(azure_settings)
+
 
 def create_app():
     app = Flask(__name__)
@@ -22,15 +32,7 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///site.db"
     db.init_app(app)
     login_manager.init_app(app)
-    config = {
-        "azure": {
-            "tenantId": os.getenv("AZURE_TENANT_ID"),
-            "clientId": os.getenv("AZURE_CLIENT_ID"),
-            "clientSecret": os.getenv("AZURE_CLIENT_SECRET"),
-        }
-    }
-    azure_settings = config["azure"]
-    graph: Graph = Graph(azure_settings)
+    
     
     
     from core.views import dashboard, excel, home, users

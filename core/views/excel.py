@@ -89,6 +89,14 @@ async def copy_excel():
 
     # Get the parentReference
     parent_id = item_data["parentReference"]["id"]
+    
+    item_endpoint = '/drive/items/' + parent_id
+    item_url = base_url + item_endpoint
+    item_response = requests.request("GET", item_url, headers=headers)
+    item_data = json.loads(item_response.text)
+    print(item_data)
+    
+    parent_id = item_data['parentReference']['id']
 
     # List all items in the parent folder
     list_endpoint = "/drive/items/" + parent_id + "/children"
