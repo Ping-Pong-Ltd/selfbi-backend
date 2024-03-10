@@ -61,11 +61,19 @@ async def copy_excel(item_id : str, new_name : str):
     item_url = base_url + item_endpoint
     item_response = requests.request("GET", item_url, headers=headers)
     item_data = json.loads(item_response.text)
+    print(item_data)
     
 
     # Get the parentReference
     parent_id = item_data['parentReference']['id']
     # print(parent_id)
+    item_endpoint = '/drive/items/' + parent_id
+    item_url = base_url + item_endpoint
+    item_response = requests.request("GET", item_url, headers=headers)
+    item_data = json.loads(item_response.text)
+    print(item_data)
+    
+    parent_id = item_data['parentReference']['id']
 
     # List all items in the parent folder
     list_endpoint = '/drive/items/' + parent_id + '/children'
@@ -120,5 +128,5 @@ async def copy_excel(item_id : str, new_name : str):
  
 if __name__ == '__main__':
     # asyncio.run(list_excel(project_name='ExcelDashboard', folder_name='Credits'))
-    asyncio.run(copy_excel(item_id='01PWT4KLRNWRBLVH2QVRFKEXLM6STS4272', new_name='test.xlsx'))
+    asyncio.run(copy_excel(item_id='01PWT4KLRNWRBLVH2QVRFKEXLM6STS4272', new_name='asdfef.xlsx'))
 
