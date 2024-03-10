@@ -26,7 +26,6 @@ config = {
 }
 
 azure_settings = config["azure"]
-print(azure_settings)
 graph: Graph = Graph(azure_settings)
 
 
