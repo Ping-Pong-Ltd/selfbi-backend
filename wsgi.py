@@ -1,11 +1,17 @@
 import os
-from core import app
+from core import create_app, db
 from waitress import serve
 from dotenv import load_dotenv
 import multiprocessing
+from core.models import User
 
 load_dotenv(".env")
 mode = os.getenv("RUN_MODE")
+
+
+app = create_app()
+with app.app_context():
+    db.create_all()
 
 if __name__ == "__main__":
     if mode == "development":
