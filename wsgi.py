@@ -3,7 +3,6 @@ from core import create_app, db
 from waitress import serve
 from dotenv import load_dotenv
 import multiprocessing
-from core.models import User
 
 load_dotenv(".env")
 mode = os.getenv("RUN_MODE")

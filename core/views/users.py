@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify
 from flask import request
 from flask_login import login_user, current_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
-from core.models import User
+from core.models import Users
 from core import db
 import jsonschema
 
@@ -12,7 +12,8 @@ schema = {
     "type": "object",
     "properties": {
         "email": {"type": "string", "format": "email", "maxLength": 120},
-        "password": {"type": "string", "minLength": 8, "maxLength": 20}
+        "password": {"type": "string", "minLength": 8, "maxLength": 20},
+        "datetime": {"type": "string", "format": "date-time"}
     },
     "required": ["email", "password"]
 }
@@ -28,12 +29,14 @@ def register():
         return jsonify({'message': 'Invalid data format', 'error': str(e)})
 
     # Continue with the registration process
-    hash_password = generate_password_hash(data['password'])[:256]
-    new_user = User(email=data['email'], password=hash_password)
-    db.session.add(new_user)
-    db.session.commit()
-    
-    return jsonify({'message': 'Register'})
+    try:
+        hash_password = generate_password_hash(data['password'])[:256]
+        new_user = Users(email=data['email'], password=hash_password, created_at = data['datetime'])
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify({'message': 'Register'})
+    except Exception as e:
+        return jsonify({'message': 'Error occurred during registration', 'error': str(e)})
 
 @users.route('/auth/login', methods=['GET','POST'])
 def login():
@@ -44,7 +47,7 @@ def login():
     except jsonschema.ValidationError as e:
         return jsonify({'message': 'Invalid data format', 'error': str(e)})
     
-    user = User.query.filter_by(email=data['email']).first()
+    user = Users.query.filter_by(email=data['email']).first()
     
     if user and check_password_hash(user.password, data['password']):
         login_user(user)
