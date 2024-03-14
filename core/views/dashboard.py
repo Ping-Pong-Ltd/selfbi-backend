@@ -90,6 +90,7 @@ async def list_files():
     if not data or len(data) == 0:
         return jsonify("No files found")
 
+    
     excel_file_dict = []
     for file in data:
         file_dict = {"name": file["name"], "cTag": file["cTag"]}
@@ -106,5 +107,29 @@ async def list_files():
                 "id": file["id"],
             }
         )
+        
+    
 
     return jsonify(excel_file_dict)
+
+@dashboard.route("/create_project")
+async def create_project():
+    project_name = request.args.get("project_name", default=None, type=str)
+    endpoint = "/drive/root:/SelfBI:/children"
+    url = base_url + endpoint
+
+    access_token = await graph.get_app_only_token()
+    
+    payload = {
+        "name": project_name,
+        "folder": { },
+        "@microsoft.graph.conflictBehavior": "fail"
+    }
+    headers = {
+        "Authorization": "Bearer " + access_token,
+        "Content-Type": "application/json",
+    }
+
+    response = requests.request("POST", url, headers=headers, data=json.dumps(payload))
+    
+    return jsonify(response.json())

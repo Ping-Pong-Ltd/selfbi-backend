@@ -124,9 +124,52 @@ async def copy_excel(item_id : str, new_name : str):
 
     data = json.loads(response.text)
     print(data)
+    
+
+
+# async def create_dashboard(dashboard_name):
+#     endpoint = "/drive/root/children"
+#     url = base_url + endpoint
+
+#     access_token = await graph.get_app_only_token()
+    
+#     payload = {
+#         "name": dashboard_name,
+#         "folder": { },
+#         "@microsoft.graph.conflictBehavior": "fail"
+#     }
+#     headers = {
+#         "Authorization": "Bearer " + access_token,
+#         "Content-Type": "application/json",
+#     }
+
+#     response = requests.request("POST", url, headers=headers, data=json.dumps(payload))
+
+#     return response
+
+async def create_project(project_name):
+    endpoint = "/drive/root:/SelfBI:/children"
+    url = base_url + endpoint
+
+    access_token = await graph.get_app_only_token()
+    
+    payload = {
+        "name": project_name,
+        "folder": { },
+        "@microsoft.graph.conflictBehavior": "fail"
+    }
+    headers = {
+        "Authorization": "Bearer " + access_token,
+        "Content-Type": "application/json",
+    }
+
+    response = requests.request("POST", url, headers=headers, data=json.dumps(payload))
+
+    return response
 
  
 if __name__ == '__main__':
     # asyncio.run(list_excel(project_name='ExcelDashboard', folder_name='Credits'))
-    asyncio.run(copy_excel(item_id='01PWT4KLRNWRBLVH2QVRFKEXLM6STS4272', new_name='asdfef.xlsx'))
-
+    # asyncio.run(copy_excel(item_id='01PWT4KLRNWRBLVH2QVRFKEXLM6STS4272', new_name='asdfef.xlsx'))
+    asyncio.run(create_project('test'))
+    # asyncio.run(create_dashboard('AITestDashboard'))
