@@ -64,8 +64,8 @@ async def download_file():
 
 @excel.route("/copy_excel", methods=["POST"])
 async def copy_excel():
-    item_id = request.form["item_id"]
-    file_name = request.form["file_name"]
+    item_id = request.args["item_id"]
+    file_name = request.args["file_name"]
 
     if not (item_id or file_name):
         return jsonify("Item ID and file name are required")
@@ -89,14 +89,14 @@ async def copy_excel():
 
     # Get the parentReference
     parent_id = item_data["parentReference"]["id"]
-    
-    item_endpoint = '/drive/items/' + parent_id
+
+    item_endpoint = "/drive/items/" + parent_id
     item_url = base_url + item_endpoint
     item_response = requests.request("GET", item_url, headers=headers)
     item_data = json.loads(item_response.text)
     print(item_data)
-    
-    parent_id = item_data['parentReference']['id']
+
+    parent_id = item_data["parentReference"]["id"]
 
     # List all items in the parent folder
     list_endpoint = "/drive/items/" + parent_id + "/children"

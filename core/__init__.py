@@ -32,7 +32,7 @@ def create_app():
     db.init_app(app)
     login_manager.init_app(app)
 
-    from core.views import dashboard, excel, home, users
+    from core.apis import dashboard, excel, home, users
 
     app.register_blueprint(home.home)
     app.register_blueprint(dashboard.dashboard)
