@@ -6,19 +6,21 @@ from core.models import Users
 from core import db
 import jsonschema
 
-users = Blueprint('users', __name__)
+users = Blueprint("users", __name__)
 
 schema = {
     "type": "object",
     "properties": {
         "email": {"type": "string", "format": "email", "maxLength": 120},
         "password": {"type": "string", "minLength": 8, "maxLength": 20},
-        "datetime": {"type": "string", "format": "date-time"}
+        "datetime": {"type": "string", "format": "date-time"},
+        "isAdmin": {"type": "boolean"},
     },
-    "required": ["email", "password"]
+    "required": ["email", "password"],
 }
 
-@users.route('/auth/register', methods=['POST'])
+
+@users.route("/auth/register", methods=["POST"])
 def register():
     data = request.get_json()
 
@@ -26,31 +28,39 @@ def register():
     try:
         jsonschema.validate(data, schema)
     except jsonschema.ValidationError as e:
-        return jsonify({'message': 'Invalid data format', 'error': str(e)})
+        return jsonify({"message": "Invalid data format", "error": str(e)})
 
     # Continue with the registration process
     try:
-        hash_password = generate_password_hash(data['password'])[:256]
-        new_user = Users(email=data['email'], password=hash_password, created_at = data['datetime'])
+        hash_password = generate_password_hash(data["password"])[:256]
+        new_user = Users(
+            email=data["email"],
+            password=hash_password,
+            isAdmin=data["isAdmin"],
+            created_at=data["datetime"],
+        )
         db.session.add(new_user)
         db.session.commit()
-        return jsonify({'message': 'Register'})
+        return jsonify({"message": "Register"})
     except Exception as e:
-        return jsonify({'message': 'Error occurred during registration', 'error': str(e)})
+        return jsonify(
+            {"message": "Error occurred during registration", "error": str(e)}
+        )
 
-@users.route('/auth/login', methods=['GET','POST'])
+
+@users.route("/auth/login", methods=["GET", "POST"])
 def login():
     data = request.get_json()
-    
+
     try:
         jsonschema.validate(data, schema)
     except jsonschema.ValidationError as e:
-        return jsonify({'message': 'Invalid data format', 'error': str(e)})
-    
-    user = Users.query.filter_by(email=data['email']).first()
-    
-    if user and check_password_hash(user.password, data['password']):
+        return jsonify({"message": "Invalid data format", "error": str(e)})
+
+    user = Users.query.filter_by(email=data["email"]).first()
+
+    if user and check_password_hash(user.password, data["password"]):
         login_user(user)
-        return jsonify({'message': 'Login'})
+        return jsonify({"message": {"user": user.email, "isAdmin": user.isAdmin}})
     else:
-        return jsonify({'message': 'Invalid credentials'})
+        return jsonify({"message": "Invalid credentials"})

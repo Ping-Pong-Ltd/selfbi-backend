@@ -4,8 +4,8 @@ import os
 from dotenv import load_dotenv
 from flask import Flask
 from flask_cors import CORS
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_sqlalchemy import SQLAlchemy
 
 from core.graph import Graph
 
@@ -24,19 +24,22 @@ config = {
 azure_settings = config["azure"]
 graph: Graph = Graph(azure_settings)
 
+
 def create_app():
     app = Flask(__name__)
     CORS(app)
     app.config["SECRET_KEY"] = os.getenv("SQL_ACLCHEMY_KEY")
-    app.config["SQLALCHEMY_DATABASE_URI"] = f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PWD')}@{os.getenv('DB_SERVER')}/{os.getenv('DB_NAME')}"
+    app.config["SQLALCHEMY_DATABASE_URI"] = (
+        f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PWD')}@{os.getenv('DB_SERVER')}/{os.getenv('DB_NAME')}"
+    )
     db.init_app(app)
     login_manager.init_app(app)
-
-    from core.apis import dashboard, excel, home, users
+    from core.apis import dashboard, excel, home, services, users
 
     app.register_blueprint(home.home)
     app.register_blueprint(dashboard.dashboard)
     app.register_blueprint(excel.excel)
     app.register_blueprint(users.users)
+    app.register_blueprint(services.services)
 
     return app
