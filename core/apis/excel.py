@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from flask import Blueprint, jsonify, request
 
 from core import graph
+from core.common.utils import get_download_link
 
 load_dotenv(".env")
 
@@ -44,28 +45,18 @@ async def upload_excel():
 @excel.route("/download_file", methods=["GET"])
 async def download_file():
     item_id = request.args.get("item_id", default=None, type=str)
+    format = request.args.get("format", default=None, type=str)
 
     if not item_id:
         return jsonify("Item ID is required")
 
-    url = f"{base_url}/drives/{drive_id}/items/{item_id}/content"
-
-    access_token = await graph.get_app_only_token()
-
-    headers = {"Authorization": "Bearer " + access_token}
-
-    response = requests.request("GET", url, headers=headers, allow_redirects=False)
-
-    if response.status_code == 302:
-        return response.headers["Location"]
-
-    return response.json()
+    return str(await get_download_link(item_id, format))
 
 
 @excel.route("/copy_excel", methods=["POST"])
 async def copy_excel():
-    item_id = request.form["item_id"]
-    file_name = request.form["file_name"]
+    item_id = request.args["item_id"]
+    file_name = request.args["file_name"]
 
     if not (item_id or file_name):
         return jsonify("Item ID and file name are required")
@@ -89,14 +80,14 @@ async def copy_excel():
 
     # Get the parentReference
     parent_id = item_data["parentReference"]["id"]
-    
-    item_endpoint = '/drive/items/' + parent_id
+
+    item_endpoint = "/drive/items/" + parent_id
     item_url = base_url + item_endpoint
     item_response = requests.request("GET", item_url, headers=headers)
     item_data = json.loads(item_response.text)
     print(item_data)
-    
-    parent_id = item_data['parentReference']['id']
+
+    parent_id = item_data["parentReference"]["id"]
 
     # List all items in the parent folder
     list_endpoint = "/drive/items/" + parent_id + "/children"

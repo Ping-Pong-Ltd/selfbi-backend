@@ -1,4 +1,5 @@
 import json
+import os
 
 import requests
 from flask import Blueprint, jsonify, request
@@ -31,8 +32,8 @@ async def list_projects():
         return jsonify("No projects found")
 
     response_data = []
-    for counter, project in enumerate(data, start=1):
-        temp_dict = {"id": counter, "name": project["name"]}
+    for project in data:
+        temp_dict = {"id": project["id"], "name": project["name"]}
         response_data.append(temp_dict)
 
     return jsonify(response_data)
@@ -62,7 +63,7 @@ async def list_folders():
 
     folders = []
     for folder in data:
-        folders.append(folder["name"])
+        folders.append({"name": folder["name"], "id": folder["id"]})
 
     return jsonify({project_name: folders})
 
@@ -90,7 +91,6 @@ async def list_files():
     if not data or len(data) == 0:
         return jsonify("No files found")
 
-    
     excel_file_dict = []
     for file in data:
         file_dict = {"name": file["name"], "cTag": file["cTag"]}
@@ -107,10 +107,9 @@ async def list_files():
                 "id": file["id"],
             }
         )
-        
-    
 
     return jsonify(excel_file_dict)
+
 
 @dashboard.route("/create_project")
 async def create_project():
@@ -119,11 +118,11 @@ async def create_project():
     url = base_url + endpoint
 
     access_token = await graph.get_app_only_token()
-    
+
     payload = {
         "name": project_name,
-        "folder": { },
-        "@microsoft.graph.conflictBehavior": "fail"
+        "folder": {},
+        "@microsoft.graph.conflictBehavior": "fail",
     }
     headers = {
         "Authorization": "Bearer " + access_token,
@@ -131,5 +130,42 @@ async def create_project():
     }
 
     response = requests.request("POST", url, headers=headers, data=json.dumps(payload))
-    
+
     return jsonify(response.json())
+
+
+@dashboard.route("/get_children")
+async def get_children():
+    item_id = request.args.get("item_id", default=None, type=str)
+    if not item_id:
+        return jsonify("Item ID is required")
+
+    driveId = os.environ.get("DRIVE_ID")
+
+    access_token = await graph.get_app_only_token()
+    headers = {
+        "Authorization": "Bearer " + access_token,
+        "Content-Type": "application/json",
+    }
+    url = base_url + f"/drives/{driveId}/items/{item_id}/children"
+    response = requests.request("GET", url, headers=headers)
+    if response.status_code == 404:
+        return jsonify("No Files Found")
+    data = json.loads(response.text)["value"]
+
+    if not data or len(data) == 0:
+        return jsonify("No folders found")
+
+    folders = []
+    for folder in data:
+
+        folders.append(
+            {
+                "name": folder["name"],
+                "id": folder["id"],
+                # "isFolder": isFolder,
+            }
+        )
+
+    print(folders)
+    return jsonify(folders)
