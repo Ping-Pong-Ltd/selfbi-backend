@@ -163,9 +163,8 @@ async def get_children():
             {
                 "name": folder["name"],
                 "id": folder["id"],
-                # "isFolder": isFolder,
+                "isFolder": True if "folder" in folder else False,
             }
         )
 
-    print(folders)
     return jsonify(folders)
