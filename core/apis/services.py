@@ -1,17 +1,15 @@
 import base64
 import json
 import mimetypes
-import os
 
 import requests
-from core.common.utils import get_download_link
 from flask import Blueprint, jsonify, request
 
 from core import graph
+from core.common.utils import get_download_link
+from core.common.variables import MG_BASE_URL, USER_ID
 
 services = Blueprint("services", __name__)
-
-base_url = "https://graph.microsoft.com/v1.0"
 
 
 def guess_mime_type(url):
@@ -51,9 +49,8 @@ async def send_email():
     if not file_path_url:
         return jsonify("File not found")
 
-    user_id = os.getenv("USER_ID")
     access_token = await graph.get_app_only_token()
-    url = f"{base_url}/users/{user_id}/sendMail"
+    url = f"{MG_BASE_URL}/users/{USER_ID}/sendMail"
 
     headers = {
         "Content-Type": "application/json",

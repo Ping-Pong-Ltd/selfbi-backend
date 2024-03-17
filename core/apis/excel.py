@@ -1,20 +1,14 @@
 import json
-import os
 
 import requests
-from dotenv import load_dotenv
 from flask import Blueprint, jsonify, request
 
 from core import graph
 from core.common.utils import get_download_link
+from core.common.variables import SITE_ID, DRIVE_ID, MG_BASE_URL
 
-load_dotenv(".env")
 
 excel = Blueprint("excel", __name__)
-
-base_url = "https://graph.microsoft.com/v1.0"
-site_id = os.getenv("SITE_ID")
-drive_id = os.getenv("DRIVE_ID")
 
 
 @excel.route("/upload_excel", methods=["POST"])
@@ -26,7 +20,7 @@ async def upload_excel():
 
     relative_path = "SelfBI/{project_id}/Sandbox"
     file_name = request.args.get("file_name", default=None, type=str)
-    url = f"{base_url}/sites/{site_id}/drives/{drive_id}/root:/{relative_path}/{file_name}:/content"
+    url = f"{MG_BASE_URL}/sites/{SITE_ID}/drives/{DRIVE_ID}/root:/{relative_path}/{file_name}:/content"
 
     access_token = await graph.get_app_only_token()
 
@@ -61,7 +55,7 @@ async def copy_excel():
     if not (item_id or file_name):
         return jsonify("Item ID and file name are required")
 
-    url = f"{base_url}/sites/{site_id}/drives/{drive_id}/items/{item_id}/copy"
+    url = f"{MG_BASE_URL}/sites/{SITE_ID}/drives/{DRIVE_ID}/items/{item_id}/copy"
     if not (item_id or file_name):
         return jsonify("Item ID and file name are required")
 
@@ -74,7 +68,7 @@ async def copy_excel():
 
     # Get the item details
     item_endpoint = "/drive/items/" + item_id
-    item_url = base_url + item_endpoint
+    item_url = MG_BASE_URL + item_endpoint
     item_response = requests.request("GET", item_url, headers=headers)
     item_data = json.loads(item_response.text)
 
@@ -82,7 +76,7 @@ async def copy_excel():
     parent_id = item_data["parentReference"]["id"]
 
     item_endpoint = "/drive/items/" + parent_id
-    item_url = base_url + item_endpoint
+    item_url = MG_BASE_URL + item_endpoint
     item_response = requests.request("GET", item_url, headers=headers)
     item_data = json.loads(item_response.text)
     print(item_data)
@@ -91,7 +85,7 @@ async def copy_excel():
 
     # List all items in the parent folder
     list_endpoint = "/drive/items/" + parent_id + "/children"
-    list_url = base_url + list_endpoint
+    list_url = MG_BASE_URL + list_endpoint
     list_response = requests.request("GET", list_url, headers=headers)
     list_data = json.loads(list_response.text)
 
@@ -105,7 +99,7 @@ async def copy_excel():
     # If 'sandbox' folder doesn't exist, create it
     if sandbox_id is None:
         create_endpoint = "/drive/items/" + parent_id + "/children"
-        create_url = base_url + create_endpoint
+        create_url = MG_BASE_URL + create_endpoint
         create_payload = {
             "name": "Sandbox",
             "folder": {},

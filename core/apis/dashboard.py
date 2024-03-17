@@ -1,21 +1,19 @@
 import json
-import os
 
 import requests
 from flask import Blueprint, jsonify, request
 
+from core.common.variables import DRIVE_ID, MG_BASE_URL
 from core import graph
 
 dashboard = Blueprint("dashboard", __name__)
-
-base_url = "https://graph.microsoft.com/v1.0"
 
 
 @dashboard.route("/projects")
 async def list_projects():
     endpoint = "/drive/root:/SelfBI:/children"
 
-    url = base_url + endpoint
+    url = MG_BASE_URL + endpoint
 
     access_token = await graph.get_app_only_token()
     payload = {}
@@ -47,7 +45,7 @@ async def list_folders():
         return jsonify("Project name is required")
 
     endpoint = "/drive/root:/SelfBI/" + project_name + ":/children"
-    url = base_url + endpoint
+    url = MG_BASE_URL + endpoint
 
     access_token = await graph.get_app_only_token()
     payload = {}
@@ -77,7 +75,7 @@ async def list_files():
         return jsonify("Project and folder name are required")
 
     endpoint = "/drive/root:/SelfBI/" + project_name + "/" + folder_name + ":/children"
-    url = base_url + endpoint
+    url = MG_BASE_URL + endpoint
 
     access_token = await graph.get_app_only_token()
     payload = {}
@@ -115,7 +113,7 @@ async def list_files():
 async def create_project():
     project_name = request.args.get("project_name", default=None, type=str)
     endpoint = "/drive/root:/SelfBI:/children"
-    url = base_url + endpoint
+    url = MG_BASE_URL + endpoint
 
     access_token = await graph.get_app_only_token()
 
@@ -140,14 +138,12 @@ async def get_children():
     if not item_id:
         return jsonify("Item ID is required")
 
-    driveId = os.environ.get("DRIVE_ID")
-
     access_token = await graph.get_app_only_token()
     headers = {
         "Authorization": "Bearer " + access_token,
         "Content-Type": "application/json",
     }
-    url = base_url + f"/drives/{driveId}/items/{item_id}/children"
+    url = MG_BASE_URL + f"/drives/{DRIVE_ID}/items/{item_id}/children"
     response = requests.request("GET", url, headers=headers)
     if response.status_code == 404:
         return jsonify("No Files Found")
