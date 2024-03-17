@@ -46,19 +46,7 @@ async def send_email():
     if not mail_to:
         return jsonify("Mail to is required")
 
-    print(item_id)
-    drive_id = os.getenv("DRIVE_ID")
-    url = f"{base_url}/drives/{drive_id}/items/{item_id}/content"
-
-    access_token = await graph.get_app_only_token()
-
-    headers = {"Authorization": "Bearer " + access_token}
-
-    response = requests.request("GET", url, headers=headers, allow_redirects=False)
-
-    file_path_url = None
-    if response.status_code == 302:
-        file_path_url = response.headers["Location"]
+    file_path_url = await get_download_link(item_id)
 
     if not file_path_url:
         return jsonify("File not found")
