@@ -1,24 +1,31 @@
-import os
-
 # from cryptography.fernet import Fernet
-from dotenv import load_dotenv
 from flask import Flask
 from flask_cors import CORS
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
 
 from core.graph import Graph
+from core.common.variables import (
+    AZURE_CLIENT_ID,
+    AZURE_CLIENT_SECRET,
+    AZURE_TENANT_ID,
+    DB_NAME,
+    DB_PWD,
+    DB_SERVER,
+    DB_USER,
+    SQL_ACLCHEMY_KEY,
+)
 
 # fernet key for encrypting and decrypting data
-# fernet = Fernet(os.getenv("FERNET_KEY"))
-load_dotenv(".env")
+# fernet = Fernet(FERNET_KEY"))
+
 login_manager = LoginManager()
 db = SQLAlchemy()
 config = {
     "azure": {
-        "tenantId": os.getenv("AZURE_TENANT_ID"),
-        "clientId": os.getenv("AZURE_CLIENT_ID"),
-        "clientSecret": os.getenv("AZURE_CLIENT_SECRET"),
+        "tenantId": AZURE_TENANT_ID,
+        "clientId": AZURE_CLIENT_ID,
+        "clientSecret": AZURE_CLIENT_SECRET,
     }
 }
 azure_settings = config["azure"]
@@ -28,9 +35,9 @@ graph: Graph = Graph(azure_settings)
 def create_app():
     app = Flask(__name__)
     CORS(app)
-    app.config["SECRET_KEY"] = os.getenv("SQL_ACLCHEMY_KEY")
+    app.config["SECRET_KEY"] = SQL_ACLCHEMY_KEY
     app.config["SQLALCHEMY_DATABASE_URI"] = (
-        f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PWD')}@{os.getenv('DB_SERVER')}/{os.getenv('DB_NAME')}"
+        f"postgresql://{DB_USER}:{DB_PWD}@{DB_SERVER}/{DB_NAME}"
     )
     db.init_app(app)
     login_manager.init_app(app)

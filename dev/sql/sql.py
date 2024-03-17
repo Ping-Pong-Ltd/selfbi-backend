@@ -1,6 +1,7 @@
 import json
 import psycopg2
 import hashlib
+import os 
 
 
 # Update the connection parameters
@@ -16,8 +17,7 @@ def get_db_connection():
         database=DATABASE_NAME,
         user=DATABASE_USER,
         password=DATABASE_PASSWORD,
-        host=DATABASE_HOST,
-        port=DATABASE_PORT
+        host=DATABASE_HOST
     )
     return conn
 

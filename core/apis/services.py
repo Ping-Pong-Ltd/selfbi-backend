@@ -1,17 +1,15 @@
 import base64
 import json
 import mimetypes
-import os
 
 import requests
-from core.common.utils import get_download_link
 from flask import Blueprint, jsonify, request
 
 from core import graph
+from core.common.utils import get_download_link
+from core.common.variables import MG_BASE_URL, USER_ID
 
 services = Blueprint("services", __name__)
-
-base_url = "https://graph.microsoft.com/v1.0"
 
 
 def guess_mime_type(url):
@@ -46,26 +44,13 @@ async def send_email():
     if not mail_to:
         return jsonify("Mail to is required")
 
-    print(item_id)
-    drive_id = os.getenv("DRIVE_ID")
-    url = f"{base_url}/drives/{drive_id}/items/{item_id}/content"
-
-    access_token = await graph.get_app_only_token()
-
-    headers = {"Authorization": "Bearer " + access_token}
-
-    response = requests.request("GET", url, headers=headers, allow_redirects=False)
-
-    file_path_url = None
-    if response.status_code == 302:
-        file_path_url = response.headers["Location"]
+    file_path_url = await get_download_link(item_id)
 
     if not file_path_url:
         return jsonify("File not found")
 
-    user_id = os.getenv("USER_ID")
     access_token = await graph.get_app_only_token()
-    url = f"{base_url}/users/{user_id}/sendMail"
+    url = f"{MG_BASE_URL}/users/{USER_ID}/sendMail"
 
     headers = {
         "Content-Type": "application/json",
@@ -94,3 +79,67 @@ async def send_email():
     )
     response = requests.request("POST", url, headers=headers, data=payload)
     return {"status": response.status_code}
+
+
+@services.route("/create/folder", methods=["POST"])
+async def create_folder():
+    parent_id = request.args.get("parent_id", default=None, type=str)
+    folder_name = request.args.get("folder_name", default=None, type=str)
+    if not parent_id:
+        return jsonify("Parent ID is required")
+
+    if not folder_name:
+        return jsonify("Folder Name is required")
+
+    access_token = await graph.get_app_only_token()
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + access_token,
+    }
+    create_endpoint = "/drive/items/" + parent_id + "/children"
+    create_url = MG_BASE_URL + create_endpoint
+    create_payload = {
+        "name": folder_name,
+        "folder": {},
+        "@mircrosoft.graph.conflictBehavior": "fail",
+    }
+    create_response = requests.request(
+        "POST", create_url, headers=headers, data=json.dumps(create_payload)
+    )
+    create_data = json.loads(create_response.text)
+
+    return jsonify(create_data)
+
+
+@services.route("/copy/file", methods=["POST"])
+async def copy_file():
+    item_id = request.args.get("item_id", default=None, type=str)
+    parent_id = request.args.get("parent_id", default=None, type=str)
+    file_name = request.args.get("file_name", default=None, type=str)
+    if not item_id:
+        return jsonify("Item ID is required")
+
+    if not parent_id:
+        return jsonify("Parent ID is required")
+
+    if not file_name:
+        return jsonify("File Name is required")
+
+    access_token = await graph.get_app_only_token()
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + access_token,
+    }
+    url = f"{MG_BASE_URL}/drive/items/{item_id}/copy"
+    payload = {
+        "parentReference": {"id": parent_id},
+        "name": file_name,
+    }
+    response = requests.request("POST", url, headers=headers, data=json.dumps(payload))
+
+    if response.status_code == 202:
+        return {"message": "file saved"}
+
+    return jsonify(response.json())
