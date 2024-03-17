@@ -79,3 +79,67 @@ async def send_email():
     )
     response = requests.request("POST", url, headers=headers, data=payload)
     return {"status": response.status_code}
+
+
+@services.route("/create/folder", methods=["POST"])
+async def create_folder():
+    parent_id = request.args.get("parent_id", default=None, type=str)
+    folder_name = request.args.get("folder_name", default=None, type=str)
+    if not parent_id:
+        return jsonify("Parent ID is required")
+
+    if not folder_name:
+        return jsonify("Folder Name is required")
+
+    access_token = await graph.get_app_only_token()
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + access_token,
+    }
+    create_endpoint = "/drive/items/" + parent_id + "/children"
+    create_url = MG_BASE_URL + create_endpoint
+    create_payload = {
+        "name": folder_name,
+        "folder": {},
+        "@mircrosoft.graph.conflictBehavior": "fail",
+    }
+    create_response = requests.request(
+        "POST", create_url, headers=headers, data=json.dumps(create_payload)
+    )
+    create_data = json.loads(create_response.text)
+
+    return jsonify(create_data)
+
+
+@services.route("/copy/file", methods=["POST"])
+async def copy_file():
+    item_id = request.args.get("item_id", default=None, type=str)
+    parent_id = request.args.get("parent_id", default=None, type=str)
+    file_name = request.args.get("file_name", default=None, type=str)
+    if not item_id:
+        return jsonify("Item ID is required")
+
+    if not parent_id:
+        return jsonify("Parent ID is required")
+
+    if not file_name:
+        return jsonify("File Name is required")
+
+    access_token = await graph.get_app_only_token()
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + access_token,
+    }
+    url = f"{MG_BASE_URL}/drive/items/{item_id}/copy"
+    payload = {
+        "parentReference": {"id": parent_id},
+        "name": file_name,
+    }
+    response = requests.request("POST", url, headers=headers, data=json.dumps(payload))
+
+    if response.status_code == 202:
+        return {"message": "file saved"}
+
+    return jsonify(response.json())

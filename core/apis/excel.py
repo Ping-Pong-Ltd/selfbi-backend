@@ -79,7 +79,6 @@ async def copy_excel():
     item_url = MG_BASE_URL + item_endpoint
     item_response = requests.request("GET", item_url, headers=headers)
     item_data = json.loads(item_response.text)
-    print(item_data)
 
     parent_id = item_data["parentReference"]["id"]
 
