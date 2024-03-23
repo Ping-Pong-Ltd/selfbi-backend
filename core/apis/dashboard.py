@@ -6,6 +6,9 @@ from flask import Blueprint, jsonify, request
 from core.common.variables import DRIVE_ID, MG_BASE_URL
 from core import graph
 
+from core.models import File_Permissions_Group, File_Permissions_User, Project, File, Group, Users, User_Group
+from core import db
+
 dashboard = Blueprint("dashboard", __name__)
 
 
@@ -35,6 +38,22 @@ async def list_projects():
         response_data.append(temp_dict)
 
     return jsonify(response_data)
+
+@dashboard.route("/popluate_projects")
+async def populate_projects():
+    endpoint = "http://127.0.0.1:8080/projects"
+    response = requests.request("GET", endpoint)
+    data = json.loads(response.text)
+    for item in data:
+        new_project = Project(
+            name=item["name"],
+            id=item["id"],
+        )
+        db.session.add(new_project)
+    
+    db.session.commit()
+    
+    return jsonify("Projects populated")
 
 
 @dashboard.route("/folders")
@@ -164,3 +183,122 @@ async def get_children():
         )
 
     return jsonify(folders)
+
+
+@dashboard.route("/populate_files")
+async def populate_files():
+    BASE_URL = "http://127.0.0.1:8080"
+    PROJECTS_ENDPOINT = "/projects"
+    FOLDERS_ENDPOINT = "/folders"
+    FILES_ENDPOINT = "/files"
+    
+    projects_response = requests.get(BASE_URL + PROJECTS_ENDPOINT)
+    projects_data = projects_response.json()
+
+    files_data = []
+
+    # Iterate through each project
+    for project in projects_data:
+        project_id = project['id']
+        project_name = project['name']
+
+        # Fetch folders for the current project
+        folders_response = requests.get(BASE_URL + FOLDERS_ENDPOINT + f"?project_name={project_name}")
+        folders_json = folders_response.json()
+
+        # Check if the response is a dictionary
+        if isinstance(folders_json, dict):
+            folders_data = folders_json.get(project_name, [])
+        else:
+            folders_data = []
+
+        # Iterate through each folder
+        for folder in folders_data:
+            folder_id = folder['id']
+
+            # Fetch files for the current folder
+            files_response = requests.get(BASE_URL + FILES_ENDPOINT + f"?project_name={project_name}&folder_name={folder['name']}")
+            files_data.extend([{"id": file['id'], "name": file['name'], "project_id": project_id} for file in files_response.json()])
+            
+            
+    for file in files_data:
+        new_file = File(
+            id=file["id"],
+            name=file["name"],
+            project_id=file["project_id"],
+        )
+        db.session.add(new_file)
+        
+    db.session.commit()
+    return jsonify("files populated successfully!")
+
+
+@dashboard.route("/populate_groups")
+async def populate_groups():
+    groups_data = [
+        {"name": "Group 1", "department": "IT"},
+        {"name": "Group 2", "department": "HR"},
+        {"name": "Group 3", "department": "Finance"},
+        {"name": "Group 4", "department": "Marketing"},
+    ]
+
+    for group in groups_data:
+        new_group = Group(
+            name=group['name'],
+            department=group['department']
+        )
+        db.session.add(new_group)
+
+    db.session.commit()
+    return jsonify("Groups populated successfully!")
+
+
+import random
+
+@dashboard.route("/populate_user_group")
+async def populate_user_group():
+    users = Users.query.all()
+    groups = Group.query.all()
+
+    for user in users:
+        if user.isAdmin:
+            user_groups = groups
+        else:
+            # Assign only one group to the user. This can be random or a specific group.
+            user_groups = [random.choice(groups[1:])]
+
+        for group in user_groups:
+            user_group = User_Group(user_id=user.id, group_id=group.id)
+            db.session.add(user_group)
+
+    db.session.commit()
+    return jsonify("User groups populated successfully!")
+
+
+@dashboard.route("/populate_file_persmissions_users")
+async def populate_file_persmissions_users():
+    users = Users.query.all()
+    files = File.query.all()
+
+    for user in users:
+        for file in files:
+            permission_type = "Write" if user.isAdmin else "Read"
+            file_permission = File_Permissions_User(file_id=file.id, user_id=user.id, permission_type=permission_type)
+            db.session.add(file_permission)
+
+    db.session.commit()
+    return jsonify("File permissions for users populated successfully!")
+
+@dashboard.route("/populate_file_persmissions_groups")
+async def populate_file_persmissions_groups():
+    groups = Group.query.all()
+    files = File.query.all()
+
+    for group in groups:
+        for file in files:
+            permission_type = "Write" if group.id % 2 == 0 else "Read"
+            file_permission = File_Permissions_Group(file_id=file.id, group_id=group.id, permission_type=permission_type)
+            db.session.add(file_permission)
+
+    db.session.commit()
+    return jsonify("File permissions for groups populated successfully!")
