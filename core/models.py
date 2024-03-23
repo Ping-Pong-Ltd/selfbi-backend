@@ -9,6 +9,8 @@ def load_user(user_id):
 
 
 class Users(db.Model, UserMixin):
+    __tablename__ = 'users'
+    
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(255), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)  # Store hashed passwords
@@ -17,37 +19,48 @@ class Users(db.Model, UserMixin):
 
 
 class Group(db.Model):
+    __tablename__ = 'group'
+    
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(255), nullable=False)
     department = db.Column(db.String(255))
 
 
 class Project(db.Model):
-    id = db.Column(db.String(256), primary_key=True)
+    __tablename__ = 'project'
+    
+    id = db.Column(db.String, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
 
 
 class File(db.Model):
-    id = db.Column(db.String(256), primary_key=True)
+    __tablename__ = 'file'
+    
+    id = db.Column(db.String, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
-    project_id = db.Column(db.String(256), db.ForeignKey("project.id"), nullable=False)
+    project_id = db.Column(db.String, db.ForeignKey('project.id'), nullable=False)
     visibility_flag = db.Column(db.Boolean, default=True)
 
 
 class User_Group(db.Model):
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), primary_key=True)
-    group_id = db.Column(db.Integer, db.ForeignKey("group.id"), primary_key=True)
-
+    __tablename__ = 'user_group'
+    
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    group_id = db.Column(db.Integer, db.ForeignKey('group.id'), primary_key=True)
 
 class File_Permissions_User(db.Model):
-    permission_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    file_id = db.Column(db.String(256), db.ForeignKey("file.id"), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    __tablename__ = 'file_permissions_user'
+    
+    permission_id = db.Column(db.Integer, primary_key=True)
+    file_id = db.Column(db.String, db.ForeignKey('file.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     permission_type = db.Column(db.String(50), nullable=False)
 
 
 class File_Permissions_Group(db.Model):
-    permission_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    file_id = db.Column(db.String(256), db.ForeignKey("file.id"), nullable=False)
-    group_id = db.Column(db.Integer, db.ForeignKey("group.id"), nullable=False)
+    __tablename__ = 'file_permissions_group'
+    
+    permission_id = db.Column(db.Integer, primary_key=True)
+    file_id = db.Column(db.String, db.ForeignKey('file.id'), nullable=False)
+    group_id = db.Column(db.Integer, db.ForeignKey('group.id'), nullable=False)
     permission_type = db.Column(db.String(50), nullable=False)
