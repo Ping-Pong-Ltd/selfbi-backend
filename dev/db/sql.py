@@ -1,70 +1,64 @@
 import json
-import psycopg2
 import hashlib
-import os 
+import requests
 
+from db import get_db_connection
 
-# Update the connection parameters
-DATABASE_NAME = 'postgres'
-DATABASE_USER = 'myuser'
-DATABASE_PASSWORD = 'mypassword'
-DATABASE_HOST = 'localhost'
-DATABASE_PORT = '5432'
-
-# Establish a database connection
-def get_db_connection():
-    conn = psycopg2.connect(
-        database=DATABASE_NAME,
-        user=DATABASE_USER,
-        password=DATABASE_PASSWORD,
-        host=DATABASE_HOST
-    )
-    return conn
 
 def show_all_users():
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM users LIMIT(10);')
+    cursor.execute("SELECT * FROM users LIMIT(10);")
     users = cursor.fetchall()
     cursor.close()
     conn.close()
     return users
 
 
-
 users = show_all_users()
 
 json_data = [
-    {'id': row[0], 'email': row[1], 'password': row[2], 'created_at': row[3].isoformat()}
+    {
+        "id": row[0],
+        "email": row[1],
+        "password": row[2],
+        "created_at": row[3].isoformat(),
+    }
     for row in users
 ]
 
-# Convert list of dictionaries to JSON string
-json_string = json.dumps(json_data, indent=4)
+# # Convert list of dictionaries to JSON string
+# json_string = json.dumps(json_data, indent=4)
 
-print(json_string)
+# print(json_string)
 
 
 def register_user(email, password):
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
     # Hash the password
     hashed_password = hashlib.sha256(password.encode()).hexdigest()
-    
-    cursor.execute('INSERT INTO users (email, password) VALUES (%s, %s);', (email, hashed_password))
+
+    cursor.execute(
+        "INSERT INTO users (email, password) VALUES (%s, %s);", (email, hashed_password)
+    )
     conn.commit()
     cursor.close()
     conn.close()
 
+
 def login_user(email, password):
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
     # Hash the password
     hashed_password = hashlib.sha256(password.encode()).hexdigest()
-    
-    cursor.execute('SELECT * FROM users WHERE email = %s AND password = %s;', (email, hashed_password))
+
+    cursor.execute(
+        "SELECT * FROM users WHERE email = %s AND password = %s;",
+        (email, hashed_password),
+    )
     user = cursor.fetchone()
     cursor.close()
     conn.close()
@@ -75,7 +69,8 @@ def get_user_projects(user_id):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute('''
+    cursor.execute(
+        """
         SELECT DISTINCT p.id AS project_id, p.name AS project_name
         FROM projects p
         JOIN files f ON p.id = f.project_id
@@ -90,34 +85,34 @@ def get_user_projects(user_id):
             JOIN user_groups ug ON fpg.group_id = ug.group_id
             WHERE fpg.file_id = f.id AND ug.user_id = %s
         );
-    ''', (user_id, user_id))
+    """,
+        (user_id, user_id),
+    )
 
     projects = cursor.fetchall()
     cursor.close()
     conn.close()
     return projects
 
-user_id = 1
-projects = get_user_projects(user_id)
 
-json_data = [
-    {'project_id': row[0], 'project_name': row[1]}
-    for row in projects
-]
+# user_id = 1
+# projects = get_user_projects(user_id)
 
-# Convert list of dictionaries to JSON string
-json_string = json.dumps(json_data, indent=4)
-project_id = json_data[0]['project_id']
+# json_data = [{"project_id": row[0], "project_name": row[1]} for row in projects]
 
-print(json_string)
+# # Convert list of dictionaries to JSON string
+# json_string = json.dumps(json_data, indent=4)
+# project_id = json_data[0]["project_id"]
 
+# print(json_string)
 
 
 def check_user_project_access(user_id, project_id):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute('''
+    cursor.execute(
+        """
         SELECT EXISTS (
             -- Check direct user permissions for files within the project
             SELECT 1
@@ -136,12 +131,51 @@ def check_user_project_access(user_id, project_id):
             WHERE f.project_id = %s
             AND ug.user_id = %s
         );
-    ''', (project_id, user_id, project_id, user_id))
+    """,
+        (project_id, user_id, project_id, user_id),
+    )
 
     access_exists = cursor.fetchone()[0]
     cursor.close()
     conn.close()
     return access_exists
 
-access_exists = check_user_project_access(user_id, project_id)
-print(access_exists)
+
+# access_exists = check_user_project_access(user_id, project_id)
+# print(access_exists)
+
+
+def add_project():
+    url = "http://127.0.0.1:8080/projects"
+    response = requests.request("GET", url)
+    data = response.json()
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    for item in data:
+        try:
+            id = item["id"]
+            name = item["name"]
+            cursor.execute(f"INSERT INTO project (id, name) VALUES ('{id}', '{name}');")
+        except Exception as e:
+            print(e)
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+
+def add_file(data):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    for item in data:
+        try:
+            id = item["id"]
+            name = item["name"]
+            cursor.execute(f"INSERT INTO project (id, name) VALUES ('{id}', '{name}');")
+        except Exception as e:
+            print(e)
+
+    conn.commit()
+    cursor.close()
+    conn.close()
