@@ -36,18 +36,19 @@ def create_app():
     app = Flask(__name__)
     CORS(app)
     app.config["SECRET_KEY"] = SQL_ACLCHEMY_KEY
-    
+
     app.config["SQLALCHEMY_DATABASE_URI"] = (
         f"postgresql://{DB_USER}:{DB_PWD}@{DB_SERVER}/{DB_NAME}"
     )
     db.init_app(app)
     login_manager.init_app(app)
-    from core.apis import dashboard, excel, home, services, users
+    from core.apis import dashboard, excel, home, services, users, populate
 
     app.register_blueprint(home.home)
     app.register_blueprint(dashboard.dashboard)
     app.register_blueprint(excel.excel)
     app.register_blueprint(users.users)
     app.register_blueprint(services.services)
+    app.register_blueprint(populate.populate)
 
     return app

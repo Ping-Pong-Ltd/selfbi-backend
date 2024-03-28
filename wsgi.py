@@ -6,6 +6,8 @@ import multiprocessing
 
 app = create_app()
 with app.app_context():
+    # db.reflect()
+    # db.drop_all()
     db.create_all()
 
 if __name__ == "__main__":
