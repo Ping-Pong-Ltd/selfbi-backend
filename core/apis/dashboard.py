@@ -1,10 +1,11 @@
 import json
 
 import requests
+from sqlalchemy import text
 from flask import Blueprint, jsonify, request
 
 from core.common.variables import DRIVE_ID, MG_BASE_URL
-from core import graph
+from core import graph, db
 
 dashboard = Blueprint("dashboard", __name__)
 
@@ -70,6 +71,8 @@ async def list_folders():
 async def list_files():
     project_name = request.args.get("project_name", default=None, type=str)
     folder_name = request.args.get("folder_name", default=None, type=str)
+    project_id = request.args.get("project_id", default=None, type=str)
+    user_id = request.args.get("user_id", default=None, type=str)
 
     if not project_name or not folder_name:
         return jsonify("Project and folder name are required")
@@ -105,6 +108,25 @@ async def list_files():
                 "id": file["id"],
             }
         )
+
+    query = text(
+        """
+        SELECT DISTINCT f.id AS file_id
+        FROM file f
+        LEFT JOIN file_permissions_user fpu ON fpu.file_id = f.id AND fpu.user_id = :user_id
+        LEFT JOIN file_permissions_group fpg ON fpg.file_id = f.id
+        LEFT JOIN user_group ug ON fpg.group_id = ug.group_id AND ug.user_id = :user_id
+        WHERE f.project_id = :project_id
+        AND (fpu.user_id IS NOT NULL OR ug.user_id IS NOT NULL);
+    """
+    )
+
+    result = db.session.execute(query, {"user_id": user_id, "project_id": project_id})
+    rows = result.fetchall()
+    rows = [row[0] for row in rows]
+
+    # 'excel_file_dict' is your list of dictionaries
+    excel_file_dict = [entry for entry in excel_file_dict if entry["id"] in rows]
 
     return jsonify(excel_file_dict)
 

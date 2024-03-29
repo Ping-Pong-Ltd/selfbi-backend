@@ -21,12 +21,11 @@ populate = Blueprint("populate", __name__)
 
 @populate.route("/populate/all")
 async def populate_all():
-    await populate_users()
+    populate_users()
     await populate_projects()
     await populate_files()
     await populate_groups()
     await populate_user_group()
-    await populate_file_persmissions_users()
     await populate_file_persmissions_groups()
     return jsonify("All tables populated successfully!")
 
@@ -218,6 +217,10 @@ async def populate_file_persmissions_users():
     return jsonify("File permissions for users populated successfully!")
 
 
+def generate_random_boolean(prob_true):
+    return random.random() < prob_true
+
+
 @populate.route("/populate/file_persmissions_groups")
 async def populate_file_persmissions_groups():
     groups = Group.query.all()
@@ -225,7 +228,11 @@ async def populate_file_persmissions_groups():
 
     for group in groups:
         for file in files:
-            permission_type = "Write" if group.id % 2 == 0 else "Read"
+            probability_true = 0.75
+            random_bool = generate_random_boolean(probability_true)
+            if random_bool:
+                continue
+            permission_type = "Read"
             file_permission = File_Permissions_Group(
                 file_id=file.id, group_id=group.id, permission_type=permission_type
             )
