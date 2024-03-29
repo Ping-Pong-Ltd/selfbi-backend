@@ -7,6 +7,13 @@ from core import graph
 from core.common.utils import get_download_link
 from core.common.variables import SITE_ID, DRIVE_ID, MG_BASE_URL
 
+import base64
+import os
+import tempfile
+import shutil
+from flask import send_file
+from zipfile import ZipFile
+
 
 excel = Blueprint("excel", __name__)
 
@@ -119,3 +126,67 @@ async def copy_excel():
     msg = f"File {file_name} has been copied to the sandbox folder"
 
     return jsonify(msg)
+
+
+@excel.route("/list_worksheets", methods=["GET"])
+async def list_worksheets():
+    item_id = request.args.get("item_id", default=None, type=str)
+
+    if not item_id:
+        return jsonify("Item ID is required")
+
+    access_token = await graph.get_app_only_token()
+
+    url = f"{MG_BASE_URL}/sites/{SITE_ID}/drives/{DRIVE_ID}/items/{item_id}/workbook/worksheets"
+    headers = {"Authorization": "Bearer " + access_token}
+
+    response = requests.request("GET", url, headers=headers)
+
+    return response.json()['value']
+
+@excel.route("/chart_data", methods=["GET"])
+async def chart_data():
+    item_id = request.args.get("item_id", default=None, type=str)
+    worksheet_name = request.args.get("worksheet_name", default=None, type=str)
+
+    if not (item_id or worksheet_name):
+        return jsonify("Item ID and worksheet name are required")
+
+    access_token = await graph.get_app_only_token()
+
+    url = f"{MG_BASE_URL}/sites/{SITE_ID}/drives/{DRIVE_ID}/items/{item_id}/workbook/worksheets('{worksheet_name}')/charts"
+    headers = {"Authorization": "Bearer " + access_token}
+
+    response = requests.request("GET", url, headers=headers)
+
+    chart_data = response.json()['value']
+    
+    # image_data = []
+    
+    # for chart in chart_data:
+    #     url = f"{MG_BASE_URL}/sites/{SITE_ID}/drives/{DRIVE_ID}/items/{item_id}/workbook/worksheets('{worksheet_name}')/charts/{chart['name']}/image(width=400,height=300)"
+        
+    #     image_response = requests.request("GET", url, headers=headers)
+    #     image_data.append(image_response.json())
+        
+    # return image_data
+    
+    # Create a temporary directory
+    with tempfile.TemporaryDirectory() as temp_dir:
+        for i, chart in enumerate(chart_data):
+            url = f"{MG_BASE_URL}/sites/{SITE_ID}/drives/{DRIVE_ID}/items/{item_id}/workbook/worksheets('{worksheet_name}')/charts/{chart['name']}/image(width=400,height=300)"
+            
+            image_response = requests.request("GET", url, headers=headers)
+            image_data = image_response.json()['value']
+
+            # Convert base64 image data to image file
+            with open(os.path.join(temp_dir, f'image_{i}.png'), 'wb') as image_file:
+                image_file.write(base64.b64decode(image_data))
+
+        # Zip the temporary directory
+        shutil.make_archive(temp_dir, 'zip', temp_dir)
+
+        # Send the zip file as a response
+        return send_file(f'{temp_dir}.zip', as_attachment=True)
+        
+    
