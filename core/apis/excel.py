@@ -119,3 +119,20 @@ async def copy_excel():
     msg = f"File {file_name} has been copied to the sandbox folder"
 
     return jsonify(msg)
+
+
+@excel.route("/list_worksheets", methods=["GET"])
+async def list_worksheets():
+    item_id = request.args.get("item_id", default=None, type=str)
+
+    if not item_id:
+        return jsonify("Item ID is required")
+
+    access_token = await graph.get_app_only_token()
+
+    url = f"{MG_BASE_URL}/sites/{SITE_ID}/drives/{DRIVE_ID}/items/{item_id}/workbook/worksheets"
+    headers = {"Authorization": "Bearer " + access_token}
+
+    response = requests.request("GET", url, headers=headers)
+
+    return response.json()['value']
