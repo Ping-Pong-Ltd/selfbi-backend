@@ -41,7 +41,18 @@ def register():
         )
         db.session.add(new_user)
         db.session.commit()
-        return jsonify({"message": "Register"})
+
+        user = Users.query.filter_by(email=data["email"]).first()
+
+        return jsonify(
+            {
+                "message": {
+                    "user": user.email,
+                    "isAdmin": user.isAdmin,
+                    "user_id": user.id,
+                }
+            }
+        )
     except Exception as e:
         return jsonify(
             {"message": "Error occurred during registration", "error": str(e)}
@@ -61,6 +72,14 @@ def login():
 
     if user and check_password_hash(user.password, data["password"]):
         login_user(user)
-        return jsonify({"message": {"user": user.email, "isAdmin": user.isAdmin}})
+        return jsonify(
+            {
+                "message": {
+                    "user": user.email,
+                    "isAdmin": user.isAdmin,
+                    "user_id": user.id,
+                }
+            }
+        )
     else:
         return jsonify({"message": "Invalid credentials"})
