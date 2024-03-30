@@ -2,7 +2,7 @@ import base64
 import json
 import mimetypes
 
-from flask_login import login_user
+from flask_login import current_user, login_required, login_user
 import requests
 from flask import Blueprint, jsonify, request
 
@@ -156,14 +156,17 @@ async def copy_file():
 
     return jsonify(response.json())
 
+@login_required
 @services.route("/send/request/mail", methods=["POST"])
 async def send_request_mail():
     admin = Users.query.filter_by(isAdmin=True)
-    mail_to = admin.email
+    mail_to = []
+    for user in admin:
+        mail_to.append(user.email)
     file_id = request.args.get("file_id", default=None, type=str)
     body = f"""Request for access to a file with file ID: {file_id}
             , please grant access to the user.
-            User mail is: {login_user.email}"""
+            User mail is: {current_user.email}"""
             
     subject = "Request for access to a file"
     
@@ -186,7 +189,7 @@ async def send_request_mail():
                     "contentType": "Text",
                     "content": body,
                 },
-                "toRecipients": [{"emailAddress": {"address": mail_to}}],
+                "toRecipients": [{"emailAddress": {"address": address}} for address in mail_to],
             }
         }
     )
