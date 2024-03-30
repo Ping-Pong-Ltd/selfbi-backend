@@ -34,7 +34,7 @@ async def populate_all():
 def populate_users():
     data = [
         {
-            "email": "admin1@example.com",
+            "email": "realshantanurajmane@gmail.com",
             "password": "password1",
             "isAdmin": True,
             "datetime": "2022-01-01T00:00:00Z",

@@ -2,12 +2,14 @@ import base64
 import json
 import mimetypes
 
+from flask_login import current_user, login_required, login_user
 import requests
 from flask import Blueprint, jsonify, request
 
 from core import graph
 from core.common.utils import get_download_link
 from core.common.variables import MG_BASE_URL, USER_ID
+from core.models import Users
 
 services = Blueprint("services", __name__)
 
@@ -35,19 +37,20 @@ def convert_to_base64(filepath):
 
 @services.route("/send/email", methods=["POST"])
 async def send_email():
-    item_id = request.args.get("item_id", default=None, type=str)
     mail_to = request.args.get("mail_to", default=None, type=str)
-
-    if not item_id:
-        return jsonify("Item ID is required")
-
+    body = request.args.get("body", default=None, type=str)
+    subject = request.args.get("subject", default=None, type=str)
+    
+    
     if not mail_to:
         return jsonify("Mail to is required")
-
-    file_path_url = await get_download_link(item_id)
-
-    if not file_path_url:
-        return jsonify("File not found")
+    
+    if not body:
+        return jsonify("Body is required")
+    
+    if not subject:
+        return jsonify("Subject is required")
+    
 
     access_token = await graph.get_app_only_token()
     url = f"{MG_BASE_URL}/users/{USER_ID}/sendMail"
@@ -60,20 +63,12 @@ async def send_email():
     payload = json.dumps(
         {
             "message": {
-                "subject": "Excel Report",
+                "subject": subject,
                 "body": {
                     "contentType": "Text",
-                    "content": "Here is your report attached to the mail.",
+                    "content": body,
                 },
                 "toRecipients": [{"emailAddress": {"address": mail_to}}],
-                "attachments": [
-                    {
-                        "@odata.type": "#microsoft.graph.fileAttachment",
-                        "name": "attachment.xlsx",
-                        "contentType": guess_mime_type(file_path_url),
-                        "contentBytes": convert_to_base64(file_path_url),
-                    }
-                ],
             }
         }
     )
@@ -143,3 +138,4 @@ async def copy_file():
         return {"message": "file saved"}
 
     return jsonify(response.json())
+
