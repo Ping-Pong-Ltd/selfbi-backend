@@ -37,15 +37,11 @@ def convert_to_base64(filepath):
 
 @services.route("/send/email", methods=["POST"])
 async def send_email():
-    item_id = request.args.get("item_id", default=None, type=str)
     mail_to = request.args.get("mail_to", default=None, type=str)
     body = request.args.get("body", default=None, type=str)
     subject = request.args.get("subject", default=None, type=str)
     
     
-    if not item_id:
-        return jsonify("Item ID is required")
-
     if not mail_to:
         return jsonify("Mail to is required")
     
@@ -55,11 +51,6 @@ async def send_email():
     if not subject:
         return jsonify("Subject is required")
     
-
-    file_path_url = await get_download_link(item_id)
-
-    if not file_path_url:
-        return jsonify("File not found")
 
     access_token = await graph.get_app_only_token()
     url = f"{MG_BASE_URL}/users/{USER_ID}/sendMail"
@@ -78,14 +69,6 @@ async def send_email():
                     "content": body,
                 },
                 "toRecipients": [{"emailAddress": {"address": mail_to}}],
-                "attachments": [
-                    {
-                        "@odata.type": "#microsoft.graph.fileAttachment",
-                        "name": "attachment.xlsx",
-                        "contentType": guess_mime_type(file_path_url),
-                        "contentBytes": convert_to_base64(file_path_url),
-                    }
-                ],
             }
         }
     )
@@ -156,42 +139,3 @@ async def copy_file():
 
     return jsonify(response.json())
 
-@login_required
-@services.route("/send/request/mail", methods=["POST"])
-async def send_request_mail():
-    admin = Users.query.filter_by(isAdmin=True)
-    mail_to = []
-    for user in admin:
-        mail_to.append(user.email)
-    file_id = request.args.get("file_id", default=None, type=str)
-    body = f"""Request for access to a file with file ID: {file_id}
-            , please grant access to the user.
-            User mail is: {current_user.email}"""
-            
-    subject = "Request for access to a file"
-    
-    if not file_id:
-        return jsonify("File ID is required")
-    
-    access_token = await graph.get_app_only_token()
-    url = f"{MG_BASE_URL}/users/{USER_ID}/sendMail"
-    
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + access_token,
-    }
-    
-    payload = json.dumps(
-        {
-            "message": {
-                "subject": subject,
-                "body": {
-                    "contentType": "Text",
-                    "content": body,
-                },
-                "toRecipients": [{"emailAddress": {"address": address}} for address in mail_to],
-            }
-        }
-    )
-    response = requests.request("POST", url, headers=headers, data=payload)
-    return {"status": response.status_code}
