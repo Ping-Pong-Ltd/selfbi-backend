@@ -35,36 +35,42 @@ def populate_users():
     data = [
         {
             "email": "realshantanurajmane@gmail.com",
+            "name": "realshantanurajmane",
             "password": "password1",
             "isAdmin": True,
             "datetime": "2022-01-01T00:00:00Z",
         },
         {
             "email": "user4@example.com",
+            "name": "user4",
             "password": "password2",
             "isAdmin": False,
             "datetime": "2022-01-02T00:00:00Z",
         },
         {
             "email": "admin2@example.com",
+            "name": "admin2",
             "password": "adminpassword",
             "isAdmin": True,
             "datetime": "2022-01-03T00:00:00Z",
         },
         {
             "email": "user1@example.com",
+            "name": "user1",
             "password": "userpassword1",
             "isAdmin": False,
             "datetime": "2022-01-04T00:00:00Z",
         },
         {
             "email": "user2@example.com",
+            "name": "user2",
             "password": "userpassword2",
             "isAdmin": False,
             "datetime": "2022-01-05T00:00:00Z",
         },
         {
             "email": "user3@example.com",
+            "name": "user3",
             "password": "userpassword3",
             "isAdmin": False,
             "datetime": "2022-01-06T00:00:00Z",
@@ -76,6 +82,7 @@ def populate_users():
         hash_password = generate_password_hash(item["password"])[:256]
         new_user = Users(
             email=item["email"],
+            name=item["name"],  
             password=hash_password,
             isAdmin=item["isAdmin"],
             created_at=item["datetime"],
