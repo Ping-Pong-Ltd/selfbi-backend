@@ -256,15 +256,12 @@ async def mail_request():
 @services.route("/mail_request/reject", methods=["POST"])
 async def mail_request_reject():
     user_id = request.args.get("user_id", default=None, type=int)
-    # project_name = request.args.get("project_name", default=None, type=str)
-    folder_names = request.args.get("folder_names", default=None, type=str)
-    folder_names = folder_names.split(",")
+    project_name = request.args.get("project_name", default=None, type=str)
     
     url = f"{SERVER}/send/email"
     user_email = Users.query.get(user_id).email
     
-    body = f"""Your request to access the following folders has been rejected\n
-            {folder_names}"""
+    body = f"Access to {project_name} has been denied"
             
     params = {
         "mail_to": user_email,
@@ -277,3 +274,4 @@ async def mail_request_reject():
         return jsonify("Email sent")
     else:
         return jsonify("Error sending email")
+    
