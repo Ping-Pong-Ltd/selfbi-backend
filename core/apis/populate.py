@@ -88,7 +88,7 @@ def populate_users():
     return jsonify({"message": "Populated database with initial data"})
 
 
-@populate.route("/popluate/projects")
+@populate.route("/populate/projects")
 async def populate_projects():
     endpoint = "http://127.0.0.1:8080/projects"
     response = requests.request("GET", endpoint)
@@ -105,61 +105,51 @@ async def populate_projects():
     return jsonify("Projects populated")
 
 
+def worker_to_add_file(BASE_URL, id, project_id, user_ids):
+    url = f"{BASE_URL}/get_children?item_id={id}"
+    response = requests.request("GET", url)
+    data = response.json()
+    for item in data:
+        if "isFolder" not in item:
+            break
+        if item["isFolder"] == True:
+            worker_to_add_file(BASE_URL, item["id"], project_id, user_ids)
+        else:
+            id = item["id"]
+            name = item["name"]
+            try:
+                # print(project_id)
+                # print(id)
+                new_file = File(
+                    id=id,
+                    name=name,
+                    project_id=project_id,
+                    created_by=random.choice(user_ids),
+                )
+                db.session.add(new_file)
+
+            except Exception as e:
+                print(e)
+
+    db.session.commit()
+
+
 @populate.route("/populate/files")
 async def populate_files():
     BASE_URL = "http://127.0.0.1:8080"
     PROJECTS_ENDPOINT = "/projects"
-    FOLDERS_ENDPOINT = "/folders"
-    FILES_ENDPOINT = "/files"
 
     projects_response = requests.get(BASE_URL + PROJECTS_ENDPOINT)
     projects_data = projects_response.json()
 
-    files_data = []
-
-    # Iterate through each project
+    users = Users.query.all()
+    user_ids = [user.id for user in users]
+    print(user_ids)
     for project in projects_data:
         project_id = project["id"]
-        project_name = project["name"]
+        # print(project_id)
+        worker_to_add_file(BASE_URL, project_id, project_id, user_ids)
 
-        # Fetch folders for the current project
-        folders_response = requests.get(
-            BASE_URL + FOLDERS_ENDPOINT + f"?project_name={project_name}"
-        )
-        folders_json = folders_response.json()
-
-        # Check if the response is a dictionary
-        if isinstance(folders_json, dict):
-            folders_data = folders_json.get(project_name, [])
-        else:
-            folders_data = []
-
-        # Iterate through each folder
-        for folder in folders_data:
-            folder_id = folder["id"]
-
-            # Fetch files for the current folder
-            files_response = requests.get(
-                BASE_URL
-                + FILES_ENDPOINT
-                + f"?project_name={project_name}&folder_name={folder['name']}"
-            )
-            files_data.extend(
-                [
-                    {"id": file["id"], "name": file["name"], "project_id": project_id}
-                    for file in files_response.json()
-                ]
-            )
-
-    for file in files_data:
-        new_file = File(
-            id=file["id"],
-            name=file["name"],
-            project_id=file["project_id"],
-        )
-        db.session.add(new_file)
-
-    db.session.commit()
     return jsonify("files populated successfully!")
 
 
@@ -240,3 +230,11 @@ async def populate_file_persmissions_groups():
 
     db.session.commit()
     return jsonify("File permissions for groups populated successfully!")
+
+
+@populate.route("/populate/test")
+def test():
+    users = Users.query.all()
+    user_ids = [user.id for user in users]
+    print(random.choice(user_ids))
+    return "hello world!"
