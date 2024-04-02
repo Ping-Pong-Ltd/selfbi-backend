@@ -50,6 +50,8 @@ def register():
                     "user": user.email,
                     "isAdmin": user.isAdmin,
                     "user_id": user.id,
+                    "user_name": user.name,
+                    "last_login": user.last_login,
                 }
             }
         )
@@ -72,14 +74,19 @@ def login():
 
     if user and check_password_hash(user.password, data["password"]):
         login_user(user)
-        return jsonify(
-            {
-                "message": {
-                    "user": user.email,
-                    "isAdmin": user.isAdmin,
-                    "user_id": user.id,
-                }
+
+        respone = {
+            "message": {
+                "user": user.email,
+                "isAdmin": user.isAdmin,
+                "user_id": user.id,
+                "user_name": user.name,
+                "last_login": user.last_login,
             }
-        )
+        }
+
+        user.last_login = db.func.now()
+        db.session.commit()
+        return jsonify(respone)
     else:
         return jsonify({"message": "Invalid credentials"})
