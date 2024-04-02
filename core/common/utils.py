@@ -16,7 +16,6 @@ async def get_download_link(item_id, format=None):
     response = requests.request("GET", url, headers=headers, allow_redirects=False)
 
     if response.status_code == 302:
-        print(response.headers["Location"])
-        return str(response.headers["Location"])
+        return response.headers
 
     return None

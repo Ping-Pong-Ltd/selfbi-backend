@@ -2,14 +2,13 @@ import base64
 import json
 import mimetypes
 
-from flask_login import current_user, login_required, login_user
 import requests
 from flask import Blueprint, jsonify, request
 
 from core import graph
 from core.common.utils import get_download_link
-from core.common.variables import MG_BASE_URL, USER_ID
-from core.models import Users
+from core.common.variables import MG_BASE_URL, USER_ID, SITE_ID, DRIVE_ID
+
 
 services = Blueprint("services", __name__)
 
@@ -35,22 +34,95 @@ def convert_to_base64(filepath):
     return base64.b64encode(response.content).decode("utf-8")
 
 
+@services.route("/send/mail/attachment", methods=["POST"])
+async def send_mail_attachment():
+    item_id = request.args.get("item_id", default=None, type=str)
+    mail_to = request.args.get("mail_to", default=None, type=str)
+    subject = request.args.get("subject", default=None, type=str)
+    body = request.args.get("body", default=None, type=str)
+
+    if not mail_to:
+        return jsonify("Mail to is required")
+
+    if not body:
+        return jsonify("Body is required")
+
+    if not subject:
+        return jsonify("Subject is required")
+
+    if not item_id:
+        return jsonify("Item ID is required")
+
+    access_token = await graph.get_app_only_token()
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + access_token,
+    }
+
+    url = f"{MG_BASE_URL}/sites/{SITE_ID}/drives/{DRIVE_ID}/items/{item_id}"
+
+    file_details = requests.request("GET", url, headers=headers)
+    file_details = file_details.json()
+
+    attachment_url = await get_download_link(item_id)
+    attachment_url = attachment_url["Location"]
+
+    url = f"{MG_BASE_URL}/users/{USER_ID}/sendMail"
+    file_size = int(file_details["size"]) / 1048576
+
+    payload = json.dumps(
+        {
+            "message": {
+                "subject": subject,
+                "body": {
+                    "contentType": "Text",
+                    "content": body + f"\n\nFile URL: {attachment_url}",
+                },
+                "toRecipients": [{"emailAddress": {"address": mail_to}}],
+            }
+        }
+    )
+
+    if file_size < 4:
+        payload = json.dumps(
+            {
+                "message": {
+                    "subject": subject,
+                    "body": {
+                        "contentType": "Text",
+                        "content": body,
+                    },
+                    "toRecipients": [{"emailAddress": {"address": mail_to}}],
+                    "attachments": [
+                        {
+                            "@odata.type": "#microsoft.graph.fileAttachment",
+                            "name": file_details["name"],
+                            "contentType": file_details["file"]["mimeType"],
+                            "contentBytes": convert_to_base64(attachment_url),
+                        }
+                    ],
+                }
+            }
+        )
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+    return jsonify({"status": response.status_code})
+
+
 @services.route("/send/email", methods=["POST"])
 async def send_email():
     mail_to = request.args.get("mail_to", default=None, type=str)
     body = request.args.get("body", default=None, type=str)
     subject = request.args.get("subject", default=None, type=str)
-    
-    
+
     if not mail_to:
         return jsonify("Mail to is required")
-    
+
     if not body:
         return jsonify("Body is required")
-    
+
     if not subject:
         return jsonify("Subject is required")
-    
 
     access_token = await graph.get_app_only_token()
     url = f"{MG_BASE_URL}/users/{USER_ID}/sendMail"
@@ -138,4 +210,3 @@ async def copy_file():
         return {"message": "file saved"}
 
     return jsonify(response.json())
-

@@ -109,6 +109,9 @@ async def list_files():
             }
         )
 
+    if folder_name == "Sandbox":
+        return jsonify(excel_file_dict)
+
     query = text(
         """
         SELECT DISTINCT f.id AS file_id
