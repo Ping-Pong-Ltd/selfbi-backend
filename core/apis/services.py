@@ -7,8 +7,9 @@ from flask import Blueprint, jsonify, request
 
 from core import graph
 from core.common.utils import get_download_link
-from core.common.variables import MG_BASE_URL, USER_ID, SITE_ID, DRIVE_ID
-
+from core.common.variables import MG_BASE_URL, SERVER, USER_ID, SITE_ID, DRIVE_ID
+from core.models import Group, User_Group, Users
+from core import db
 
 services = Blueprint("services", __name__)
 
@@ -210,3 +211,69 @@ async def copy_file():
         return {"message": "file saved"}
 
     return jsonify(response.json())
+
+
+@services.route("/mail_request/accept", methods=["POST"])
+async def mail_request():
+    user_id = request.args.get("user_id", default=None, type=int)
+    project_name = request.args.get("project_name", default=None, type=str)
+    folder_names = request.args.get("folder_names", default=None, type=str)
+    folder_names = folder_names.split(",")
+    user_email = Users.query.get(user_id).email
+    
+    granted_projects = []
+    
+    for folder in folder_names:
+        group = Group.query.filter_by(name=project_name+"."+folder).first()
+        if group:
+            existing_membership = User_Group.query.filter_by(user_id=user_id, group_id=group.id).first()
+            if not existing_membership:
+                user_group = User_Group(user_id=user_id, group_id=group.id)
+                db.session.add(user_group)
+                db.session.commit()
+                granted_projects.append(folder)
+            else:
+                continue
+        else:
+            return jsonify("Folder not found")
+        
+    url = f"{SERVER}/send/email"
+    body = ""
+    for folder in granted_projects:
+        body += f"Access to {project_name}/{folder} has been granted\n"
+    params = {
+        "mail_to": user_email,
+        "subject": "Access Granted",
+        "body": body,
+    }
+    response = requests.request("POST", url, params=params)
+    
+    if response.status_code == 200:
+        return jsonify("User added to the group")
+    else: 
+        return jsonify("Error sending email")
+
+@services.route("/mail_request/reject", methods=["POST"])
+async def mail_request_reject():
+    user_id = request.args.get("user_id", default=None, type=int)
+    # project_name = request.args.get("project_name", default=None, type=str)
+    folder_names = request.args.get("folder_names", default=None, type=str)
+    folder_names = folder_names.split(",")
+    
+    url = f"{SERVER}/send/email"
+    user_email = Users.query.get(user_id).email
+    
+    body = f"""Your request to access the following folders has been rejected\n
+            {folder_names}"""
+            
+    params = {
+        "mail_to": user_email,
+        "subject": "Access Denied",
+        "body": body,
+    }
+    response = requests.request("POST", url, params=params)
+    
+    if response.status_code == 200:
+        return jsonify("Email sent")
+    else:
+        return jsonify("Error sending email")
