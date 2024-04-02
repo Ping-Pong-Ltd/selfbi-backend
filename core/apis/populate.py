@@ -167,6 +167,10 @@ async def populate_groups():
         {"name": "Group 2", "department": "HR"},
         {"name": "Group 3", "department": "Finance"},
         {"name": "Group 4", "department": "Marketing"},
+        {"name": "Project_1.Folder_1", "department": "Admin"},
+        {"name": "Project_1.Folder_2", "department": "Admin"},
+        {"name": "Project_1.Folder_3", "department": "Admin"},
+        {"name": "Project_2.Folder_1", "department": "Admin"},
     ]
 
     for group in groups_data:

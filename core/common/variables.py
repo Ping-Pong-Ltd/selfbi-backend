@@ -33,3 +33,7 @@ else:
     DB_PWD = os.getenv("DB_PWD_LOCAL")
 
 SQL_ACLCHEMY_KEY = os.getenv("SQL_ACLCHEMY_KEY")
+
+
+# Server
+SERVER = os.getenv("SERVER")
