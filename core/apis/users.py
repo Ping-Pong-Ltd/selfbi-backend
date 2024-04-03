@@ -35,9 +35,11 @@ def register():
         hash_password = generate_password_hash(data["password"])[:256]
         new_user = Users(
             email=data["email"],
+            name=data["name"],
             password=hash_password,
             isAdmin=data["isAdmin"],
             created_at=data["datetime"],
+            last_login=data["datetime"],
         )
         db.session.add(new_user)
         db.session.commit()
