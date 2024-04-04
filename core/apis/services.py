@@ -138,7 +138,7 @@ async def send_email():
             "message": {
                 "subject": subject,
                 "body": {
-                    "contentType": "Text",
+                    "contentType": "HTML",
                     "content": body,
                 },
                 "toRecipients": [{"emailAddress": {"address": mail_to}}],
@@ -216,44 +216,51 @@ async def copy_file():
 @services.route("/mail_request/accept", methods=["POST"])
 async def mail_request():
     user_id = request.args.get("user_id", default=None, type=int)
-    project_name = request.args.get("project_name", default=None, type=str)
+    # project_name = request.args.get("project_name", default=None, type=str)
     folder_names = request.args.get("folder_names", default=None, type=str)
     folder_names = folder_names.split(",")
     user_email = Users.query.get(user_id).email
     
-    granted_projects = []
-    
-    for folder in folder_names:
-        group = Group.query.filter_by(name=project_name+"."+folder).first()
-        if group:
-            existing_membership = User_Group.query.filter_by(user_id=user_id, group_id=group.id).first()
-            if not existing_membership:
-                user_group = User_Group(user_id=user_id, group_id=group.id)
-                db.session.add(user_group)
-                db.session.commit()
-                granted_projects.append(folder)
-            else:
-                continue
-        else:
-            return jsonify("Folder not found")
+    try:
+        granted_projects = []
         
-    url = f"{SERVER}/send/email"
-    body = ""
-    for folder in granted_projects:
-        body += f"Access to {project_name}/{folder} has been granted\n"
-    params = {
-        "mail_to": user_email,
-        "subject": "Access Granted",
-        "body": body,
-    }
-    response = requests.request("POST", url, params=params)
-    
-    if response.status_code == 200:
-        return jsonify("User added to the group")
-    else: 
-        return jsonify("Error sending email")
+        for folder in folder_names:
+            group = Group.query.filter_by(name=folder).first()
+            if group:
+                existing_membership = User_Group.query.filter_by(user_id=user_id, group_id=group.id).first()
+                if not existing_membership:
+                    user_group = User_Group(user_id=user_id, group_id=group.id)
+                    db.session.add(user_group)
+                    db.session.commit()
+                    granted_projects.append(folder)
+                else:
+                    continue
+            else:
+                return jsonify("Folder not found")
+            
+        url = f"{SERVER}/send/email"
+        body = ""
+        if (len(granted_projects) == 0):
+            body += f"Already have access to the folders\n"
+        else:
+            for folder in granted_projects:
+                body += f"Access to {folder.split('/')} has been granted\n"
+        params = {
+            "mail_to": user_email,
+            "subject": "Access Granted",
+            "body": body,
+        }
+        response = requests.request("POST", url, params=params)
+        
+        if response.status_code == 200:
+            return jsonify("User added to the group")
+        else: 
+            return jsonify("Error sending email")
+        
+    except Exception as e:
+        return jsonify(str(e))
 
-@services.route("/mail_request/reject", methods=["POST"])
+@services.route("/mail_request/reject", methods=["GET","POST"])
 async def mail_request_reject():
     user_id = request.args.get("user_id", default=None, type=int)
     project_name = request.args.get("project_name", default=None, type=str)

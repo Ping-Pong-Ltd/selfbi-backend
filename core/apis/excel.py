@@ -56,8 +56,8 @@ async def download_file():
 
 @excel.route("/copy_excel", methods=["POST"])
 async def copy_excel():
-    item_id = request.args["item_id"]
-    file_name = request.args["file_name"]
+    item_id = request.form["item_id"]
+    file_name = request.form["file_name"]
 
     if not (item_id or file_name):
         return jsonify("Item ID and file name are required")
