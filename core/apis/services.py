@@ -138,7 +138,7 @@ async def send_email():
             "message": {
                 "subject": subject,
                 "body": {
-                    "contentType": "Text",
+                    "contentType": "HTML",
                     "content": body,
                 },
                 "toRecipients": [{"emailAddress": {"address": mail_to}}],
