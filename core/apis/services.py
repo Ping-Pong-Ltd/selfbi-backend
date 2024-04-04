@@ -260,7 +260,7 @@ async def mail_request():
     except Exception as e:
         return jsonify(str(e))
 
-@services.route("/mail_request/reject", methods=["POST"])
+@services.route("/mail_request/reject", methods=["GET","POST"])
 async def mail_request_reject():
     user_id = request.args.get("user_id", default=None, type=int)
     project_name = request.args.get("project_name", default=None, type=str)
