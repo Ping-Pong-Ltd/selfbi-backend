@@ -69,3 +69,20 @@ class File_Permissions_Group(db.Model):
     file_id = db.Column(db.String, db.ForeignKey("file.id"), nullable=False)
     group_id = db.Column(db.Integer, db.ForeignKey("group.id"), nullable=False)
     permission_type = db.Column(db.String(50), nullable=False)
+
+class Requests_Access(db.Model):
+    __tablename__ = "requests_access"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    project_id = db.Column(db.String, db.ForeignKey("project.id"), nullable=False)
+    status = db.Column(db.Boolean, nullable=False, default=False)
+
+class Admin_Group(db.Model):
+    __tablename__ = "admin_group"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    project_id = db.Column(db.String, db.ForeignKey("project.id"), nullable=False)
+
+    user = db.relationship('Users', backref='admin_groups')

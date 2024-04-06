@@ -8,8 +8,10 @@ from flask import Blueprint, jsonify, request
 from core import graph
 from core.common.utils import get_download_link
 from core.common.variables import MG_BASE_URL, SERVER, USER_ID, SITE_ID, DRIVE_ID
-from core.models import Group, User_Group, Users
+from core.models import Group, User_Group, Users, Requests_Access, Admin_Group, Project
 from core import db
+
+from sqlalchemy.orm import joinedload
 
 services = Blueprint("services", __name__)
 
@@ -213,10 +215,9 @@ async def copy_file():
     return jsonify(response.json())
 
 
-@services.route("/mail_request/accept", methods=["POST"])
+@services.route("/access/accept", methods=["POST"])
 async def mail_request():
     user_id = request.args.get("user_id", default=None, type=int)
-    # project_name = request.args.get("project_name", default=None, type=str)
     folder_names = request.args.get("folder_names", default=None, type=str)
     folder_names = folder_names.split(",")
     user_email = Users.query.get(user_id).email
@@ -260,15 +261,20 @@ async def mail_request():
     except Exception as e:
         return jsonify(str(e))
 
-@services.route("/mail_request/reject", methods=["GET","POST"])
+@services.route("/access/reject", methods=["GET","POST"])
 async def mail_request_reject():
     user_id = request.args.get("user_id", default=None, type=int)
-    project_name = request.args.get("project_name", default=None, type=str)
-    
+
+    if not user_id:
+        return jsonify("User ID is required")
+
+    db.session.query(Users).filter(Users.id == user_id).delete()
+    db.session.commit()
+
     url = f"{SERVER}/send/email"
     user_email = Users.query.get(user_id).email
     
-    body = f"Access to {project_name} has been denied"
+    body = f"Access to has been denied \n\nYour access request has been denied by the admin\nCreate New Account to request access again\n"
             
     params = {
         "mail_to": user_email,
@@ -282,3 +288,81 @@ async def mail_request_reject():
     else:
         return jsonify("Error sending email")
     
+
+@services.route("/request/access", methods=["POST"])
+def request_access():
+    user_id = request.form.get("user_id", default=None, type=int)
+    project_ids = request.form['project_ids']
+    project_ids = project_ids.split(",")
+
+    print(project_ids)
+    # return jsonify("Request sent")
+    if not user_id:
+        return jsonify("User ID is required")
+    
+    if not project_ids:
+        return jsonify("Project IDs are required")
+    
+    user_emails = set()
+    for project_id in project_ids:
+        request_access = Requests_Access(user_id=user_id, project_id=str(project_id))
+        db.session.add(request_access)
+        db.session.commit()
+
+    for project_id in project_ids:
+        user_ids = [user.id for user in Admin_Group.query.filter(Admin_Group.project_id == project_id).all()]
+        for user in Users.query.filter(Users.id.in_(user_ids)).all():
+            user_emails.add(user.email)
+    
+    print(user_emails)
+    url = f"{SERVER}/send/email"
+    body = f'''
+        <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Project Approval Request</title>
+                </head>
+                <body>
+                    <h1>Project Approval Request</h1>
+                    <p>Dear Admin,</p>
+                    <p>We kindly request your approval for the following project:</p>
+                    <p>Please review the project details and click one of the buttons below:</p>
+                    <a href="http://localhost:3000/requestPage?user_id={user_id}"> 
+                        <button style="background-color: #4CAF50; color: white; padding: 10px 20px; border: none; cursor: pointer;">Accept</button>
+                    </a>
+                    <a href="http://localhost:8080/access/reject?user_id={user_id}"> 
+                        <button style="background-color: #FF5733; color: white; padding: 10px 20px; border: none; cursor: pointer;">Reject</button>
+                    </a>
+                </body>
+                </html>
+
+    '''
+
+    for user_email in user_emails:
+        params = {
+            "mail_to": user_email,
+            "subject": "Project Approval Request",
+            "body": body,
+        }
+        requests.request("POST", url, params=params)
+
+    return jsonify("Request sent")
+        
+@services.route("/get/requests", methods=["GET"])
+def get_requests():
+    user_id = request.args.get("user_id", default=None, type=int)
+    if not user_id:
+        return jsonify("User ID is required")
+    
+    requests = Requests_Access.query.filter_by(user_id=user_id).all()
+    response_data = []
+
+    project_names = [project_name for project_name in Project.query.filter(Project.id == Requests_Access.project_id).all()]
+    for project_name in project_names:
+        temp = {}
+        temp['name'] = project_name.name
+        response_data.append(temp)
+    
+    return jsonify(response_data)

@@ -110,6 +110,12 @@ async def list_files():
             }
         )
 
+    for item in excel_file_dict:
+        file_id = item["id"]
+        file = File.query.get(file_id)
+        if file:
+            item["last_modified_by"] = file.creator.name
+
     if folder_name == "Sandbox":
         return jsonify(excel_file_dict)
 
@@ -132,11 +138,7 @@ async def list_files():
     # 'excel_file_dict' is your list of dictionaries
     excel_file_dict = [entry for entry in excel_file_dict if entry["id"] in rows]
 
-    for item in excel_file_dict:
-        file_id = item["id"]
-        file = File.query.get(file_id)
-        if file:
-            item["last_modified_by"] = file.creator.name
+    
 
 
     return jsonify(excel_file_dict)

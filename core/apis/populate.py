@@ -14,6 +14,7 @@ from core.models import (
     Project,
     User_Group,
     Users,
+    Admin_Group
 )
 
 populate = Blueprint("populate", __name__)
@@ -26,6 +27,7 @@ async def populate_all():
     await populate_groups()
     await populate_user_group()
     populate_file_persmissions_groups()
+    populate_admin_groups()
     return jsonify("All tables populated successfully!")
 
 
@@ -40,18 +42,18 @@ def populate_users():
             "datetime": "2022-01-01T00:00:00Z",
         },
         {
+            "email": "sahilkamate03@gmail.com",
+            "name": "admin2",
+            "password": "adminpassword",
+            "isAdmin": True,
+            "datetime": "2022-01-03T00:00:00Z",
+        },
+        {
             "email": "user4@example.com",
             "name": "user4",
             "password": "password2",
             "isAdmin": False,
             "datetime": "2022-01-02T00:00:00Z",
-        },
-        {
-            "email": "admin2@example.com",
-            "name": "admin2",
-            "password": "adminpassword",
-            "isAdmin": True,
-            "datetime": "2022-01-03T00:00:00Z",
         },
         {
             "email": "user1@example.com",
@@ -219,25 +221,6 @@ def generate_random_boolean(prob_true):
     return random.random() < prob_true
 
 
-# @populate.route("/populate/file_persmissions_groups")
-# async def populate_file_persmissions_groups():
-#     groups = Group.query.all()
-#     files = File.query.all()
-
-#     for group in groups:
-#         for file in files:
-#             probability_true = 0.75
-#             random_bool = generate_random_boolean(probability_true)
-#             if random_bool:
-#                 continue
-#             permission_type = "Read"
-#             file_permission = File_Permissions_Group(
-#                 file_id=file.id, group_id=group.id, permission_type=permission_type
-#             )
-#             db.session.add(file_permission)
-
-#     db.session.commit()
-#     return jsonify("File permissions for groups populated successfully!")
 
 
 @populate.route("/populate/file_persmissions_groups")
@@ -274,3 +257,45 @@ def populate_file_persmissions_groups():
         pass
     db.session.commit()
     return jsonify("Tested")
+
+@populate.route("/populate/admin_groups")
+def populate_admin_groups():
+    data = [
+        {
+            "user_id": 1,
+            "project_id": "01PWT4KLWBBFX6P4FNPVA2CVJNZRFMPMV4",
+        },
+        {
+            "user_id": 2,
+            "project_id": "01PWT4KLR7T7PMAKSIPJALGQEDCEF63UDJ",
+        },
+    ]
+
+    for item in data:
+        new_admin_group = Admin_Group(
+            user_id=item["user_id"],
+            project_id=item["project_id"],
+        )
+        db.session.add(new_admin_group)
+    db.session.commit()
+    return jsonify("Admin groups populated successfully!")
+
+# @populate.route("/populate/file_persmissions_groups")
+# async def populate_file_persmissions_groups():
+#     groups = Group.query.all()
+#     files = File.query.all()
+
+#     for group in groups:
+#         for file in files:
+#             probability_true = 0.75
+#             random_bool = generate_random_boolean(probability_true)
+#             if random_bool:
+#                 continue
+#             permission_type = "Read"
+#             file_permission = File_Permissions_Group(
+#                 file_id=file.id, group_id=group.id, permission_type=permission_type
+#             )
+#             db.session.add(file_permission)
+
+#     db.session.commit()
+#     return jsonify("File permissions for groups populated successfully!")
