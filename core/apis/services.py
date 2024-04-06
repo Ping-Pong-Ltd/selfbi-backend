@@ -293,9 +293,9 @@ async def mail_request_reject():
         return jsonify("Error sending email")
     
 
-@services.route("/request/access", methods=["POST"])
+@services.route("/request/access", methods=["GET","POST"])
 def request_access():
-    user_id = request.form.get("user_id", default=None, type=int)
+    user_id = request.form['user_id']
     project_ids = request.form['project_ids']
     project_ids = project_ids.split(",")
 
@@ -358,13 +358,18 @@ def get_requests():
     if not user_id:
         return jsonify("User ID is required")
     
-    requests = Requests_Access.query.filter_by(user_id=user_id).all()
+    # Get all requests made by the user
+    user_requests = Requests_Access.query.filter_by(user_id=user_id).all()
+
     response_data = []
 
-    project_names = [project_name for project_name in Project.query.filter(Project.id == Requests_Access.project_id).all()]
-    for project_name in project_names:
-        temp = {}
-        temp['name'] = project_name.name
-        response_data.append(temp)
+    # Loop through each request made by the user
+    for req in user_requests:
+        # Get the project associated with the request
+        project = Project.query.filter_by(id=req.project_id).first()
+        if project:
+            temp = {}
+            temp['name'] = project.name
+            response_data.append(temp)
     
     return jsonify(response_data)
