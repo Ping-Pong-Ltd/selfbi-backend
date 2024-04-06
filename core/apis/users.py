@@ -1,10 +1,11 @@
-from flask import Blueprint, jsonify
-from flask import request
+from flask import Blueprint, jsonify, make_response
+from flask import request, current_app as app
 from flask_login import login_user, current_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 from core.models import Users
 from core import db
-import jsonschema
+from datetime import datetime, timedelta, timezone
+import jsonschema, jwt
 
 users = Blueprint("users", __name__)
 
@@ -19,6 +20,12 @@ schema = {
     "required": ["email", "password"],
 }
 
+def generate_token(user):
+    token = jwt.encode({
+        'public_id': user.id,
+        'exp' : datetime.utcnow() + timedelta(minutes = 60)
+    }, app.config['SECRET_KEY'])
+    return token
 
 @users.route("/auth/register", methods=["POST"])
 def register():
@@ -45,6 +52,7 @@ def register():
         db.session.commit()
 
         user = Users.query.filter_by(email=data["email"]).first()
+        token = generate_token(user)
 
         return jsonify(
             {
@@ -54,6 +62,7 @@ def register():
                     "user_id": user.id,
                     "user_name": user.name,
                     "last_login": user.last_login,
+                    "access_token": token,
                 }
             }
         )
@@ -76,6 +85,7 @@ def login():
 
     if user and check_password_hash(user.password, data["password"]):
         login_user(user)
+        token = generate_token(user)
 
         respone = {
             "message": {
@@ -84,11 +94,12 @@ def login():
                 "user_id": user.id,
                 "user_name": user.name,
                 "last_login": user.last_login,
+                "access_token": token
             }
         }
 
         user.last_login = db.func.now()
         db.session.commit()
-        return jsonify(respone)
+        return make_response(jsonify(respone))
     else:
         return jsonify({"message": "Invalid credentials"})
