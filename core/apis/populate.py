@@ -18,7 +18,6 @@ from core.models import (
 
 populate = Blueprint("populate", __name__)
 
-
 @populate.route("/populate/all")
 async def populate_all():
     populate_users()
@@ -26,7 +25,7 @@ async def populate_all():
     await populate_files()
     await populate_groups()
     await populate_user_group()
-    await populate_file_persmissions_groups()
+    populate_file_persmissions_groups()
     return jsonify("All tables populated successfully!")
 
 
@@ -125,8 +124,6 @@ def worker_to_add_file(BASE_URL, id, project_id, user_ids):
             id = item["id"]
             name = item["name"]
             try:
-                # print(project_id)
-                # print(id)
                 new_file = File(
                     id=id,
                     name=name,
@@ -222,30 +219,58 @@ def generate_random_boolean(prob_true):
     return random.random() < prob_true
 
 
+# @populate.route("/populate/file_persmissions_groups")
+# async def populate_file_persmissions_groups():
+#     groups = Group.query.all()
+#     files = File.query.all()
+
+#     for group in groups:
+#         for file in files:
+#             probability_true = 0.75
+#             random_bool = generate_random_boolean(probability_true)
+#             if random_bool:
+#                 continue
+#             permission_type = "Read"
+#             file_permission = File_Permissions_Group(
+#                 file_id=file.id, group_id=group.id, permission_type=permission_type
+#             )
+#             db.session.add(file_permission)
+
+#     db.session.commit()
+#     return jsonify("File permissions for groups populated successfully!")
+
+
 @populate.route("/populate/file_persmissions_groups")
-async def populate_file_persmissions_groups():
-    groups = Group.query.all()
-    files = File.query.all()
-
-    for group in groups:
-        for file in files:
-            probability_true = 0.75
-            random_bool = generate_random_boolean(probability_true)
-            if random_bool:
+def populate_file_persmissions_groups():
+    projects = Project.query.all()
+    for project in projects:
+        url = f"http://127.0.0.1:8080/get_children?item_id={project.id}"
+        response = requests.request("GET", url)
+        data = response.json()
+        name_query = project.name +"."
+        for item in data:
+            url = f"http://127.0.0.1:8080/get_children?item_id={item["id"]}"
+            response = requests.request("GET", url)
+            data_file = response.json()
+            if item["name"] == "Sandbox":
                 continue
-            permission_type = "Read"
-            file_permission = File_Permissions_Group(
-                file_id=file.id, group_id=group.id, permission_type=permission_type
-            )
-            db.session.add(file_permission)
+            temp_var = name_query + item["name"]
+            group_id = Group.query.filter_by(name=temp_var).first().id
+            for file in data_file:
+                if "isFolder" not in file:
+                    break
 
+                file_data = File_Permissions_Group(
+                    file_id=file["id"],
+                    group_id=group_id,
+                    permission_type="Read",
+                )
+                try:
+                    db.session.add(file_data)
+                except Exception as e:
+                    print(e)
+                    pass
+
+        pass
     db.session.commit()
-    return jsonify("File permissions for groups populated successfully!")
-
-
-@populate.route("/populate/test")
-def test():
-    users = Users.query.all()
-    user_ids = [user.id for user in users]
-    print(random.choice(user_ids))
-    return "hello world!"
+    return jsonify("Tested")
