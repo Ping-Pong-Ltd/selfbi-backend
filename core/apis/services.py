@@ -215,7 +215,7 @@ async def copy_file():
     return jsonify(response.json())
 
 
-@services.route("/access/accept", methods=["POST"])
+@services.route("/request/accept", methods=["POST"])
 async def mail_request():
     user_id = request.args.get("user_id", default=None, type=int)
     folder_names = request.args.get("folder_names", default=None, type=str)
@@ -232,6 +232,9 @@ async def mail_request():
                 if not existing_membership:
                     user_group = User_Group(user_id=user_id, group_id=group.id)
                     db.session.add(user_group)
+                    group_requests = Requests_Access.query.filter_by(user_id=user_id).all()
+                    for group_request in group_requests:
+                        group_request.status = True
                     db.session.commit()
                     granted_projects.append(folder)
                 else:
@@ -239,6 +242,7 @@ async def mail_request():
             else:
                 return jsonify("Folder not found")
             
+
         url = f"{SERVER}/send/email"
         body = ""
         if (len(granted_projects) == 0):
@@ -261,7 +265,7 @@ async def mail_request():
     except Exception as e:
         return jsonify(str(e))
 
-@services.route("/access/reject", methods=["GET","POST"])
+@services.route("/request/reject", methods=["GET","POST"])
 async def mail_request_reject():
     user_id = request.args.get("user_id", default=None, type=int)
 
@@ -295,8 +299,6 @@ def request_access():
     project_ids = request.form['project_ids']
     project_ids = project_ids.split(",")
 
-    print(project_ids)
-    # return jsonify("Request sent")
     if not user_id:
         return jsonify("User ID is required")
     

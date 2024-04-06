@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, make_response
 from flask import request, current_app as app
 from flask_login import login_user, current_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
-from core.models import Users
+from core.models import Users, Requests_Access
 from core import db
 from datetime import datetime, timedelta, timezone
 import jsonschema, jwt
@@ -84,6 +84,11 @@ def login():
     user = Users.query.filter_by(email=data["email"]).first()
 
     if user and check_password_hash(user.password, data["password"]):
+        request_status = Requests_Access.query.filter_by(user_id=user.id).all()
+        for req in request_status:
+            if req.status == False:
+                return {"message": "Request is pending. Please wait for approval."}
+
         login_user(user)
         token = generate_token(user)
 
