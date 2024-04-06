@@ -2,8 +2,10 @@ import json
 
 import requests
 from flask import Blueprint, jsonify, request
+# import win32com.client as win32
 
-from core import graph
+from core import graph, db
+from core.models import File
 from core.common.utils import get_download_link
 from core.common.variables import SITE_ID, DRIVE_ID, MG_BASE_URL
 
@@ -27,7 +29,8 @@ async def upload_excel():
 
     relative_path = "SelfBI/{project_id}/Sandbox"
     file_name = request.args.get("file_name", default=None, type=str)
-    url = f"{MG_BASE_URL}/sites/{SITE_ID}/drives/{DRIVE_ID}/root:/{relative_path}/{file_name}:/content"
+    url = f"{MG_BASE_URL}/sites/{SITE_ID}/drives/{
+        DRIVE_ID}/root:/{relative_path}/{file_name}:/content"
 
     access_token = await graph.get_app_only_token()
 
@@ -36,7 +39,8 @@ async def upload_excel():
         return jsonify("No file found")
 
     payload = file.read()
-    headers = {"Content-Type": "text/plain", "Authorization": "Bearer " + access_token}
+    headers = {"Content-Type": "text/plain",
+               "Authorization": "Bearer " + access_token}
 
     response = requests.request("PUT", url, headers=headers, data=payload)
 
@@ -101,7 +105,6 @@ async def copy_excel():
         if item["name"] == "Sandbox" and item["folder"]:
             sandbox_id = item["id"]
             break
-
     # If 'sandbox' folder doesn't exist, create it
     if sandbox_id is None:
         create_endpoint = "/drive/items/" + parent_id + "/children"
@@ -119,7 +122,31 @@ async def copy_excel():
 
     payload = {"parentReference": {"id": sandbox_id}, "name": file_name}
 
-    response = requests.request("POST", url, headers=headers, data=json.dumps(payload))
+    response = requests.request(
+        "POST", url, headers=headers, data=json.dumps(payload))
+
+    if (response.status_code == 409):
+        return jsonify("File already exists")
+
+    # print(response.headers)
+    status_link = response.headers["Location"]
+    status_response = requests.request("GET", status_link)
+    status_data = json.loads(status_response.text)
+    resource_id = status_data["resourceId"]
+
+    project_id = db.session.query(File.project_id).filter(
+        File.id == item_id).first()[0]
+    
+    file_data = File(
+        id=resource_id,
+        name=file_name,
+        project_id=project_id,
+        created_by=1,
+    )
+
+    db.session.add(file_data)
+    db.session.commit()
+
     if response.status_code == 404:
         return jsonify("File not found")
 
@@ -137,12 +164,14 @@ async def list_worksheets():
 
     access_token = await graph.get_app_only_token()
 
-    url = f"{MG_BASE_URL}/sites/{SITE_ID}/drives/{DRIVE_ID}/items/{item_id}/workbook/worksheets"
+    url = f"{
+        MG_BASE_URL}/sites/{SITE_ID}/drives/{DRIVE_ID}/items/{item_id}/workbook/worksheets"
     headers = {"Authorization": "Bearer " + access_token}
 
     response = requests.request("GET", url, headers=headers)
 
     return response.json()['value']
+
 
 @excel.route("/chart_data", methods=["GET"])
 async def chart_data():
@@ -154,28 +183,30 @@ async def chart_data():
 
     access_token = await graph.get_app_only_token()
 
-    url = f"{MG_BASE_URL}/sites/{SITE_ID}/drives/{DRIVE_ID}/items/{item_id}/workbook/worksheets('{worksheet_name}')/charts"
+    url = f"{MG_BASE_URL}/sites/{SITE_ID}/drives/{DRIVE_ID}/items/{
+        item_id}/workbook/worksheets('{worksheet_name}')/charts"
     headers = {"Authorization": "Bearer " + access_token}
 
     response = requests.request("GET", url, headers=headers)
 
     chart_data = response.json()['value']
-    
+
     # image_data = []
-    
+
     # for chart in chart_data:
     #     url = f"{MG_BASE_URL}/sites/{SITE_ID}/drives/{DRIVE_ID}/items/{item_id}/workbook/worksheets('{worksheet_name}')/charts/{chart['name']}/image(width=400,height=300)"
-        
+
     #     image_response = requests.request("GET", url, headers=headers)
     #     image_data.append(image_response.json())
-        
+
     # return image_data
-    
+
     # Create a temporary directory
     with tempfile.TemporaryDirectory() as temp_dir:
         for i, chart in enumerate(chart_data):
-            url = f"{MG_BASE_URL}/sites/{SITE_ID}/drives/{DRIVE_ID}/items/{item_id}/workbook/worksheets('{worksheet_name}')/charts/{chart['name']}/image(width=400,height=300)"
-            
+            url = f"{MG_BASE_URL}/sites/{SITE_ID}/drives/{DRIVE_ID}/items/{
+                item_id}/workbook/worksheets('{worksheet_name}')/charts/{chart['name']}/image(width=400,height=300)"
+
             image_response = requests.request("GET", url, headers=headers)
             image_data = image_response.json()['value']
 
@@ -188,5 +219,3 @@ async def chart_data():
 
         # Send the zip file as a response
         return send_file(f'{temp_dir}.zip', as_attachment=True)
-        
-    

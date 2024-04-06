@@ -18,6 +18,7 @@ class Users(db.Model, UserMixin):
     isAdmin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.datetime.now(), nullable=False)
     last_login = db.Column(db.DateTime, default=datetime.datetime.now(), nullable=False)
+    files = db.relationship('File', backref='creator', lazy=True)
 
 
 class Group(db.Model):

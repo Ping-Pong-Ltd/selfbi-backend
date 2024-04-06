@@ -4,6 +4,7 @@ import requests
 from sqlalchemy import text
 from flask import Blueprint, jsonify, request
 
+from core.models import File
 from core.common.variables import DRIVE_ID, MG_BASE_URL
 from core import graph, db
 
@@ -130,6 +131,13 @@ async def list_files():
 
     # 'excel_file_dict' is your list of dictionaries
     excel_file_dict = [entry for entry in excel_file_dict if entry["id"] in rows]
+
+    for item in excel_file_dict:
+        file_id = item["id"]
+        file = File.query.get(file_id)
+        if file:
+            item["last_modified_by"] = file.creator.name
+
 
     return jsonify(excel_file_dict)
 
