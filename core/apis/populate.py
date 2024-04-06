@@ -232,7 +232,7 @@ def populate_file_persmissions_groups():
         data = response.json()
         name_query = project.name +"."
         for item in data:
-            url = f"http://127.0.0.1:8080/get_children?item_id={item["id"]}"
+            url = f"http://127.0.0.1:8080/get_children?item_id={item['id']}"
             response = requests.request("GET", url)
             data_file = response.json()
             if item["name"] == "Sandbox":

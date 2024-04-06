@@ -29,8 +29,7 @@ async def upload_excel():
 
     relative_path = "SelfBI/{project_id}/Sandbox"
     file_name = request.args.get("file_name", default=None, type=str)
-    url = f"{MG_BASE_URL}/sites/{SITE_ID}/drives/{
-        DRIVE_ID}/root:/{relative_path}/{file_name}:/content"
+    url = f"{MG_BASE_URL}/sites/{SITE_ID}/drives/{DRIVE_ID}/root:/{relative_path}/{file_name}:/content"
 
     access_token = await graph.get_app_only_token()
 
@@ -164,8 +163,7 @@ async def list_worksheets():
 
     access_token = await graph.get_app_only_token()
 
-    url = f"{
-        MG_BASE_URL}/sites/{SITE_ID}/drives/{DRIVE_ID}/items/{item_id}/workbook/worksheets"
+    url = f"{MG_BASE_URL}/sites/{SITE_ID}/drives/{DRIVE_ID}/items/{item_id}/workbook/worksheets"
     headers = {"Authorization": "Bearer " + access_token}
 
     response = requests.request("GET", url, headers=headers)
@@ -183,8 +181,7 @@ async def chart_data():
 
     access_token = await graph.get_app_only_token()
 
-    url = f"{MG_BASE_URL}/sites/{SITE_ID}/drives/{DRIVE_ID}/items/{
-        item_id}/workbook/worksheets('{worksheet_name}')/charts"
+    url = f"{MG_BASE_URL}/sites/{SITE_ID}/drives/{DRIVE_ID}/items/{item_id}/workbook/worksheets('{worksheet_name}')/charts"
     headers = {"Authorization": "Bearer " + access_token}
 
     response = requests.request("GET", url, headers=headers)
@@ -204,8 +201,7 @@ async def chart_data():
     # Create a temporary directory
     with tempfile.TemporaryDirectory() as temp_dir:
         for i, chart in enumerate(chart_data):
-            url = f"{MG_BASE_URL}/sites/{SITE_ID}/drives/{DRIVE_ID}/items/{
-                item_id}/workbook/worksheets('{worksheet_name}')/charts/{chart['name']}/image(width=400,height=300)"
+            url = f"{MG_BASE_URL}/sites/{SITE_ID}/drives/{DRIVE_ID}/items/{item_id}/workbook/worksheets('{worksheet_name}')/charts/{chart['name']}/image(width=400,height=300)"
 
             image_response = requests.request("GET", url, headers=headers)
             image_data = image_response.json()['value']
