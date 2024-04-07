@@ -59,6 +59,7 @@ async def download_file():
 
 @excel.route("/copy_excel", methods=["POST"])
 async def copy_excel():
+    user_id = request.form["user_id"]
     item_id = request.form["item_id"]
     file_name = request.form["file_name"]
 
@@ -140,7 +141,7 @@ async def copy_excel():
         id=resource_id,
         name=file_name,
         project_id=project_id,
-        created_by=1,
+        created_by=user_id,
     )
 
     db.session.add(file_data)
