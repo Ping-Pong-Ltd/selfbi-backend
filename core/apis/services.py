@@ -298,7 +298,8 @@ def request_access():
     user_id = request.form['user_id']
     project_ids = request.form['project_ids']
     project_ids = project_ids.split(",")
-
+    users_data = Users.query.filter(Users.id == user_id).first()
+    users_data_name = users_data.name
     if not user_id:
         return jsonify("User ID is required")
     
@@ -318,29 +319,13 @@ def request_access():
     
     print(user_emails)
     url = f"{SERVER}/send/email"
-    body = f'''
-        <!DOCTYPE html>
-                <html lang="en">
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>Project Approval Request</title>
-                </head>
-                <body>
-                    <h1>Project Approval Request</h1>
-                    <p>Dear Admin,</p>
-                    <p>We kindly request your approval for the following project:</p>
-                    <p>Please review the project details and click one of the buttons below:</p>
-                    <a href="http://localhost:3000/requestPage?user_id={user_id}"> 
-                        <button style="background-color: #4CAF50; color: white; padding: 10px 20px; border: none; cursor: pointer;">Accept</button>
-                    </a>
-                    <a href="http://localhost:8080/access/reject?user_id={user_id}"> 
-                        <button style="background-color: #FF5733; color: white; padding: 10px 20px; border: none; cursor: pointer;">Reject</button>
-                    </a>
-                </body>
-                </html>
-
-    '''
+    with open("core/templates/approveMailtemplate.html", "r") as file:
+        html_content = file.read()
+        
+    html_content = html_content.replace("{users_data_name}", users_data_name)
+    html_content = html_content.replace("http://localhost:3000/requestPage?user_id={user_id}", f"http://localhost:3000/requestPage?user_id={user_id}")
+    html_content = html_content.replace("http://localhost:8080/access/reject?user_id={user_id}", f"http://localhost:8080/access/reject?user_id={user_id}")
+    body = f'''{html_content}'''
 
     for user_email in user_emails:
         params = {
