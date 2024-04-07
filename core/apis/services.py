@@ -3,13 +3,18 @@ import json
 import mimetypes
 
 import requests
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, send_file
 
 from core import graph
 from core.common.utils import get_download_link
 from core.common.variables import MG_BASE_URL, SERVER, USER_ID, SITE_ID, DRIVE_ID
 from core.models import Group, User_Group, Users, Requests_Access, Admin_Group, Project
 from core import db
+from core.common.utils import get_download_link
+from pdf2image import convert_from_path
+import win32com.client as win32
+import  requests, urllib, os, tempfile
+import pythoncom
 
 from sqlalchemy.orm import joinedload
 
@@ -368,3 +373,84 @@ def get_requests():
         response_data.append(temp)
     
     return jsonify(response_data)
+
+
+def get_file_ext(content_disposition):
+
+    parts = content_disposition.split(";")
+    for part in parts:
+        if part.strip().startswith("filename*="):
+            encoded_filename = part.split("filename*=", 1)[1].strip("'")
+            encoded_filename = encoded_filename.replace("utf-8''", "", 1)  # Remove "utf-8''"
+            filename = urllib.parse.unquote(encoded_filename)
+            _, ext = os.path.splitext(filename)  # Get the file extension
+            break
+        elif part.strip().startswith("filename="):
+            filename = part.split("filename=", 1)[1].strip("\"")
+            _, ext = os.path.splitext(filename)  # Get the file extension
+            break
+
+    return ext
+
+def pdf_to_image(pdf_path, output_folder):
+    pages = convert_from_path(pdf_path)
+    for page in pages:
+        with tempfile.NamedTemporaryFile(suffix='.jpg', dir=output_folder, delete=False) as temp_image:
+            page.save(temp_image.name, 'JPEG')
+        break
+    
+    return temp_image.name
+
+def excel_to_pdf(input_file, output_file, sheet_name):
+    excel = win32.gencache.EnsureDispatch('Excel.Application')
+    excel.Visible = False 
+
+    try:
+        wb = excel.Workbooks.Open(input_file)
+
+        ws = wb.Worksheets(sheet_name)  
+
+        ws.PageSetup.Zoom = False
+        ws.PageSetup.FitToPagesWide = 1
+        ws.PageSetup.FitToPagesTall = False
+
+        output_file = os.path.abspath(output_file)
+
+        ws.ExportAsFixedFormat(Type=0, Filename=output_file)
+        # Type=0 is PDF, see Excel VBA documentation for other formats
+        
+        return pdf_to_image(output_file, './core/temp/img')
+
+    except Exception as e:
+        print(f"Failed to convert: {e}")
+    finally:
+        # Make sure to close the workbook and quit Excel even if an error occurred
+        wb.Close(SaveChanges=False)  # No need to save changes
+        excel.Quit()
+
+@services.route('/download/excel/image')
+async def get_download():
+    item_id = request.args.get('item_id')
+    sheet_name = request.args.get('sheet_name')
+
+    if not item_id:
+        return jsonify("Item ID is required")
+    
+    if not sheet_name:
+        return jsonify("Sheet Name is required")
+
+    pythoncom.CoInitialize()
+    download_link = await get_download_link(item_id)
+    download_link = download_link['Location']
+    response = requests.get(download_link, stream=True)  # Make a GET request to the URL
+    headers = response.headers
+    file_header = headers.get('Content-Disposition')
+    extension = get_file_ext(file_header)
+
+    with tempfile.NamedTemporaryFile(suffix=extension, dir='./core/temp/excel', delete=False) as f:
+        f.write(response.content)
+    output_file = tempfile.NamedTemporaryFile(suffix='.pdf').name
+    image_path = excel_to_pdf(f.name, output_file, sheet_name)
+    os.remove(f.name)
+    
+    return  send_file(image_path, mimetype='image/png')  # Send the created image to the user

@@ -1,6 +1,6 @@
 from core.common.utils import token_required
 from flask import Blueprint, render_template, jsonify
-from flask_login import login_required
+
 
 home =Blueprint('home',__name__)
 
