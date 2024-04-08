@@ -417,6 +417,8 @@ def excel_to_pdf(input_file, output_file, sheet_name):
         # Make sure to close the workbook and quit Excel even if an error occurred
         wb.Close(SaveChanges=False)  # No need to save changes
         excel.Quit()
+        os.remove(input_file)
+
 
 @services.route('/download/excel/image')
 async def get_download():
@@ -441,6 +443,5 @@ async def get_download():
         f.write(response.content)
     output_file = tempfile.NamedTemporaryFile(suffix='.pdf').name
     image_path = excel_to_pdf(f.name, output_file, sheet_name)
-    os.remove(f.name)
     
-    return  send_file(image_path, mimetype='image/png')  # Send the created image to the user
+    return  send_file(image_path, mimetype='image/png', as_attachment=True)  # Send the created image to the user
