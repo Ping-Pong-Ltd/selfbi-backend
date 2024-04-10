@@ -4,7 +4,7 @@ import requests
 from sqlalchemy import text
 from flask import Blueprint, jsonify, request
 
-from core.models import File, Group, Project, Requests_Access
+from core.models import File, Group, Project, Requests_Access, User_Group, Users
 from core.common.variables import DRIVE_ID, MG_BASE_URL
 from core import graph, db
 from core.common.utils import create_folder
@@ -255,3 +255,27 @@ async def get_children():
         )
 
     return jsonify(folders)
+
+
+@dashboard.route("/get_group_users")
+async def get_group_users():
+    group_name = request.args.get("group_name", default=None, type=str)
+    if not group_name:
+        return jsonify("Group name is required")
+    
+    group = Group.query.filter_by(name=group_name).first()
+    if not group:
+        return jsonify("Group not found")
+    
+    users_in_group = db.session.query(Users).join(
+        User_Group, Users.id == User_Group.user_id
+    ).filter(User_Group.group_id == group.id).all()
+    
+    
+    users = []
+    for user in users_in_group:
+        users.append({"id": user.id, "name": user.name, "email": user.email})    
+    return jsonify(users)
+    
+
+    
