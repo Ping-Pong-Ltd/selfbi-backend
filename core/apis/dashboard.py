@@ -11,8 +11,9 @@ from core import graph, db
 dashboard = Blueprint("dashboard", __name__)
 
 
-@dashboard.route("/projects")
-async def list_projects():
+
+@dashboard.route("/user/projects")
+async def list_user_projects():
     user_id = request.args.get("user_id", default=None, type=str)
     endpoint = "/drive/root:/SelfBI:/children"
 
@@ -45,6 +46,33 @@ async def list_projects():
         else:
             continue
 
+    return jsonify(response_data)
+
+@dashboard.route("/projects")
+async def list_projects():
+    endpoint = "/drive/root:/SelfBI:/children"
+
+    url = MG_BASE_URL + endpoint
+
+    access_token = await graph.get_app_only_token()
+    payload = {}
+    headers = {"Authorization": "Bearer " + access_token}
+
+    response = requests.request("GET", url, headers=headers, data=payload)
+
+    if response.status_code == 404:
+        return jsonify("No Projects")
+
+    data = json.loads(response.text)["value"]
+
+    if not data or len(data) == 0:
+        return jsonify("No projects found")
+    
+    response_data = []
+    for project in data:
+        temp_dict = {"id": project["id"], "name": project["name"]}
+        response_data.append(temp_dict)
+    
     return jsonify(response_data)
 
 
