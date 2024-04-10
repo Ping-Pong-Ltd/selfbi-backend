@@ -4,7 +4,7 @@ import requests
 from sqlalchemy import text
 from flask import Blueprint, jsonify, request
 
-from core.models import File
+from core.models import File, Requests_Access
 from core.common.variables import DRIVE_ID, MG_BASE_URL
 from core import graph, db
 
@@ -13,6 +13,7 @@ dashboard = Blueprint("dashboard", __name__)
 
 @dashboard.route("/projects")
 async def list_projects():
+    user_id = request.args.get("user_id", default=None, type=str)
     endpoint = "/drive/root:/SelfBI:/children"
 
     url = MG_BASE_URL + endpoint
@@ -30,11 +31,19 @@ async def list_projects():
 
     if not data or len(data) == 0:
         return jsonify("No projects found")
-
+    
+    project_ids = Requests_Access.query.filter_by(user_id = user_id, status = True).all()
+    project_ids_array = []
+    for ids in project_ids:
+        project_ids_array.append(ids.project_id)
+    
     response_data = []
     for project in data:
-        temp_dict = {"id": project["id"], "name": project["name"]}
-        response_data.append(temp_dict)
+        if project["id"] in project_ids_array:
+            temp_dict = {"id": project["id"], "name": project["name"]}
+            response_data.append(temp_dict)
+        else:
+            continue
 
     return jsonify(response_data)
 
