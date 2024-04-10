@@ -4,9 +4,10 @@ import requests
 from sqlalchemy import text
 from flask import Blueprint, jsonify, request
 
-from core.models import File, Requests_Access
+from core.models import File, Group, Project, Requests_Access
 from core.common.variables import DRIVE_ID, MG_BASE_URL
 from core import graph, db
+from core.common.utils import create_folder
 
 dashboard = Blueprint("dashboard", __name__)
 
@@ -183,7 +184,10 @@ async def list_files():
 
 @dashboard.route("/create_project")
 async def create_project():
-    project_name = request.args.get("project_name", default=None, type=str)
+    data = request.get_json()
+    project_name = data.get("projectName")
+    folders = data.get("folders")
+
     endpoint = "/drive/root:/SelfBI:/children"
     url = MG_BASE_URL + endpoint
 
@@ -200,8 +204,23 @@ async def create_project():
     }
 
     response = requests.request("POST", url, headers=headers, data=json.dumps(payload))
+    parent_id = json.loads(response.text)["id"]
+    
+    new_project = Project(id=parent_id, name=project_name)
+    db.session.add(new_project)
+    db.session.commit()
+    
+    for folder in folders:
+        folder_name = folder.get("folderName")
+        await create_folder(folder_name, parent_id)
+        group_name = project_name + "." + folder_name
+        new_Group = Group(name=group_name, department="Admin")
+        db.session.add(new_Group)
+    
+    db.session.commit()
+    
+    return jsonify({"message": "Project and folders created successfully"}), 200
 
-    return jsonify(response.json())
 
 
 @dashboard.route("/get_children")

@@ -1,3 +1,4 @@
+import json
 import requests, jwt
 from functools import wraps
 
@@ -21,6 +22,27 @@ async def get_download_link(item_id, format=None):
         return response.headers
 
     return None
+
+
+async def create_folder(folder_name, parent_id):
+    endpoint = f"/drives/{DRIVE_ID}/items/{parent_id}/children"
+    url = MG_BASE_URL + endpoint
+
+    access_token = await graph.get_app_only_token()
+
+    payload = {
+        "name": folder_name,
+        "folder": {},
+        "@microsoft.graph.conflictBehavior": "fail",
+    }
+    headers = {
+        "Authorization": "Bearer " + access_token,
+        "Content-Type": "application/json",
+    }
+
+    response = requests.request("POST", url, headers=headers, data=json.dumps(payload))
+
+    return jsonify(response.json())
 
 
 def token_required(f):
