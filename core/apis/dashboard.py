@@ -4,7 +4,15 @@ import requests
 from sqlalchemy import text
 from flask import Blueprint, jsonify, request
 
-from core.models import File, Group, Project, Requests_Access, User_Group, Users
+from core.models import (
+    Admin_Group, 
+    File, 
+    Group, 
+    Project, 
+    Requests_Access, 
+    User_Group, 
+    Users
+    )
 from core.common.variables import DRIVE_ID, MG_BASE_URL
 from core import graph, db
 from core.common.utils import create_folder
@@ -184,15 +192,20 @@ async def list_files():
 
 @dashboard.route("/create_project", methods=["POST"])
 async def create_project():
+    # Get data from request
     data = request.get_json()
     project_name = data.get("projectName")
     folders = data.get("folders")
+    user_id = data.get("user_id")
 
+    # Define endpoint and url
     endpoint = "/drive/root:/SelfBI:/children"
     url = MG_BASE_URL + endpoint
 
+    # Get access token
     access_token = await graph.get_app_only_token()
 
+    # Define payload and headers
     payload = {
         "name": project_name,
         "folder": {},
@@ -203,20 +216,33 @@ async def create_project():
         "Content-Type": "application/json",
     }
 
+    # Make request
     response = requests.request("POST", url, headers=headers, data=json.dumps(payload))
     parent_id = json.loads(response.text)["id"]
     
+    # Create new project and add to session
     new_project = Project(id=parent_id, name=project_name)
     db.session.add(new_project)
-    db.session.commit()
-    
+
+    # Update user and create new admin group
+    user = Users.query.get(user_id)
+    user.isAdmin = True
+    new_admin_group = Admin_Group(user_id=user_id, project_id=parent_id)
+    db.session.add(new_admin_group)
+
+    # Create folders and groups
     for folder in folders:
         folder_name = folder.get("folderName")
         await create_folder(folder_name, parent_id)
         group_name = project_name + "." + folder_name
         new_Group = Group(name=group_name, department="Admin")
         db.session.add(new_Group)
+        db.session.flush()
+        
+        new_user_group = User_Group(user_id=user_id, group_id=new_Group.id)
+        db.session.add(new_user_group)
     
+    # Commit all changes to the session
     db.session.commit()
     
     return jsonify({"message": "Project and folders created successfully"}), 200

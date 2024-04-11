@@ -12,9 +12,9 @@ from core.models import Group, User_Group, Users, Requests_Access, Admin_Group, 
 from core import db
 from core.common.utils import get_download_link
 from pdf2image import convert_from_path
-import win32com.client as win32
+# import win32com.client as win32
 import  requests, urllib, os, tempfile
-import pythoncom
+# import pythoncom
 
 from sqlalchemy.orm import joinedload
 
