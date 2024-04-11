@@ -182,7 +182,7 @@ async def list_files():
     return jsonify(excel_file_dict)
 
 
-@dashboard.route("/create_project")
+@dashboard.route("/create_project", methods=["POST"])
 async def create_project():
     data = request.get_json()
     project_name = data.get("projectName")
