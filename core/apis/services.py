@@ -11,7 +11,7 @@ from core.common.variables import MG_BASE_URL, SERVER, USER_ID, SITE_ID, DRIVE_I
 from core.models import Group, User_Group, Users, Requests_Access, Admin_Group, Project
 from core import db
 from core.common.utils import get_download_link
-from pdf2image import convert_from_path
+# from pdf2image import convert_from_path
 # import win32com.client as win32
 import  requests, urllib, os, tempfile
 # import pythoncom
