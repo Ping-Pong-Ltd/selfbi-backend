@@ -57,7 +57,6 @@ def register():
         db.session.commit()
 
         user = Users.query.filter_by(email=data["email"]).first()
-        token = generate_token(user)
         
         send_email(user.id)
 
@@ -69,7 +68,6 @@ def register():
                     "user_id": user.id,
                     "user_name": user.name,
                     "last_login": user.last_login,
-                    "access_token": token,
                 }
             }
         )
@@ -89,6 +87,9 @@ def login():
         return jsonify({"message": "Invalid data format", "error": str(e)})
 
     user = Users.query.filter_by(email=data["email"]).first()
+    
+    if not user:
+        return jsonify({"message": "Register User"}), 401
 
     if user and check_password_hash(user.password, data["password"]):
         request_status = Requests_Access.query.filter_by(user_id=user.id).all()
