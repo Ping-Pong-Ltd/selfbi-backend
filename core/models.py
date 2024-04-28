@@ -19,6 +19,13 @@ class Users(db.Model, UserMixin):
     created_at = db.Column(db.DateTime, default=datetime.datetime.now(), nullable=False)
     last_login = db.Column(db.DateTime, default=datetime.datetime.now(), nullable=False)
     files = db.relationship('File', backref='creator', lazy=True)
+    isVerified = db.Column(db.Boolean, default=False)
+    role_id = db.Column(db.Integer, db.ForeignKey("role.id"), nullable=False)
+
+class Role(db.Model):
+    __tablename__ = "role"
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(255), nullable=False)
 
 
 class Group(db.Model):

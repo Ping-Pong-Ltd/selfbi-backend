@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, make_response
 from flask import request, current_app as app
 from flask_login import login_user, current_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
-from core.models import Users, Requests_Access
+from core.models import Users, Requests_Access, Role
 from core import db
 from datetime import datetime, timedelta, timezone
 import jsonschema, jwt
@@ -87,11 +87,14 @@ def login():
         request_status = Requests_Access.query.filter_by(user_id=user.id).all()
         for req in request_status:
             if req.status == False:
-                return {"message": "Request is pending. Please wait for approval."}
+                return {"message": "Request is pending. Please wait for approval."}, 401
+            
+        if not user.isVerified:
+            return {"message": "User is not verified. Please contact the admin."} , 401
 
-        login_user(user)
         token = generate_token(user)
 
+        role = Role.query.get(user.role_id)
         respone = {
             "message": {
                 "user": user.email,
@@ -99,12 +102,15 @@ def login():
                 "user_id": user.id,
                 "user_name": user.name,
                 "last_login": user.last_login,
-                "access_token": token
+                "access_token": token,
+                "role": role.name
             }
         }
 
         user.last_login = db.func.now()
         db.session.commit()
+        login_user(user)
+
         return make_response(jsonify(respone))
     else:
         return jsonify({"message": "Invalid credentials"})

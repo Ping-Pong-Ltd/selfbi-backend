@@ -14,13 +14,15 @@ from core.models import (
     Project,
     User_Group,
     Users,
-    Admin_Group
+    Admin_Group,
+    Role
 )
 
 populate = Blueprint("populate", __name__)
 
 @populate.route("/populate/all")
 async def populate_all():
+    populate_role()
     populate_users()
     await populate_projects()
     await populate_files()
@@ -40,6 +42,8 @@ def populate_users():
             "password": "password1",
             "isAdmin": True,
             "datetime": "2022-01-01T00:00:00Z",
+            "role_id" : 1,
+            "isVerified": True
         },
         {
             "email": "sahilkamate03@gmail.com",
@@ -47,6 +51,8 @@ def populate_users():
             "password": "adminpassword",
             "isAdmin": True,
             "datetime": "2022-01-03T00:00:00Z",
+            "role_id" : 1,
+            "isVerified": True
         },
         {
             "email": "user4@example.com",
@@ -54,6 +60,8 @@ def populate_users():
             "password": "password2",
             "isAdmin": False,
             "datetime": "2022-01-02T00:00:00Z",
+            "role_id" : 3,
+            "isVerified": True
         },
         {
             "email": "user1@example.com",
@@ -61,6 +69,8 @@ def populate_users():
             "password": "userpassword1",
             "isAdmin": False,
             "datetime": "2022-01-04T00:00:00Z",
+            "role_id" : 3,
+            "isVerified": True
         },
         {
             "email": "user2@example.com",
@@ -68,6 +78,8 @@ def populate_users():
             "password": "userpassword2",
             "isAdmin": False,
             "datetime": "2022-01-05T00:00:00Z",
+            "role_id" : 2,
+            "isVerified": True
         },
         {
             "email": "user3@example.com",
@@ -75,6 +87,8 @@ def populate_users():
             "password": "userpassword3",
             "isAdmin": False,
             "datetime": "2022-01-06T00:00:00Z",
+            "role_id" : 2,
+            "isVerified": True
         },
     ]
 
@@ -87,6 +101,8 @@ def populate_users():
             password=hash_password,
             isAdmin=item["isAdmin"],
             created_at=item["datetime"],
+            role_id=item["role_id"],
+            isVerified=item["isVerified"]
         )
         db.session.add(new_user)
 
@@ -299,3 +315,27 @@ def populate_admin_groups():
 
 #     db.session.commit()
 #     return jsonify("File permissions for groups populated successfully!")
+
+
+@populate.route("/populate/role")
+def populate_role():
+    data = [
+        {
+            "role" : "Admin",
+        },
+        {
+            "role" : "Developer",
+        },
+        {
+            "role" : "User",
+        }
+    ]
+
+    for item in data:
+        new_admin_group = Role(
+            name=item["role"],
+        )
+        db.session.add(new_admin_group)
+    db.session.commit()
+
+    return jsonify("Roles Table populated successfully!")
