@@ -20,7 +20,7 @@ class Users(db.Model, UserMixin):
     last_login = db.Column(db.DateTime, default=datetime.datetime.now(), nullable=False)
     files = db.relationship('File', backref='creator', lazy=True)
     isVerified = db.Column(db.Boolean, default=False)
-    role_id = db.Column(db.Integer, db.ForeignKey("role.id"), nullable=False)
+    role_id = db.Column(db.Integer, db.ForeignKey("role.id"), nullable=False, default=3)
 
 class Role(db.Model):
     __tablename__ = "role"

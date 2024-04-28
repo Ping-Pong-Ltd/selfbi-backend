@@ -51,6 +51,7 @@ def register():
             isAdmin=data["isAdmin"],
             created_at=data["datetime"],
             last_login=data["datetime"],
+
         )
         db.session.add(new_user)
         db.session.commit()
@@ -91,12 +92,13 @@ def login():
 
     if user and check_password_hash(user.password, data["password"]):
         request_status = Requests_Access.query.filter_by(user_id=user.id).all()
+        if not user.isVerified:
+            return {"message": "User is not verified. Please contact the admin."} , 401
+        
         for req in request_status:
             if req.status == False:
                 return {"message": "Request is pending. Please wait for approval."}, 401
             
-        if not user.isVerified:
-            return {"message": "User is not verified. Please contact the admin."} , 401
 
         token = generate_token(user)
 
