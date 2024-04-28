@@ -1,11 +1,15 @@
 from flask import Blueprint, jsonify, make_response
 from flask import request, current_app as app
 from flask_login import login_user, current_user, logout_user, login_required
+import requests
 from werkzeug.security import generate_password_hash, check_password_hash
+from core.common.variables import SERVER
 from core.models import Users, Requests_Access, Role
 from core import db
 from datetime import datetime, timedelta, timezone
 import jsonschema, jwt
+import requests.exceptions
+
 
 users = Blueprint("users", __name__)
 
@@ -53,6 +57,8 @@ def register():
 
         user = Users.query.filter_by(email=data["email"]).first()
         token = generate_token(user)
+        
+        send_email(user.id)
 
         return jsonify(
             {
@@ -114,3 +120,38 @@ def login():
         return make_response(jsonify(respone))
     else:
         return jsonify({"message": "Invalid credentials"})
+
+
+
+@users.route("/verify_email/<token>", methods=["GET"])
+def verify_email(token):
+    user = Users.query.get(token)
+    if user:
+        user.isVerified = True
+        db.session.commit()
+        return jsonify({"message": "Email verified successfully"})
+    
+
+
+
+
+def send_email(user_id):
+    try:
+        user = Users.query.get(user_id)
+        if user:
+            user_email = user.email
+            url = f"{SERVER}/send/email"
+            with open("core/templates/verifyTemplate.html", "r") as file:
+                html_content = file.read()
+            html_content = html_content.replace("http://localhost:3000/verify_email/<token>", f"http://localhost:8080/verify_email/{user_id}")
+            body = f'''{html_content}'''
+            params = {
+                "mail_to": user_email,
+                "subject": "Project Approval Request",
+                "body": body,
+            }
+            response = requests.request("POST", url, params=params)
+            response.raise_for_status()
+            return {"message": "Email sent successfully"}, 200
+    except requests.exceptions.RequestException as e:
+        return {"message": "Failed to send email", "error": str(e)}, 500
