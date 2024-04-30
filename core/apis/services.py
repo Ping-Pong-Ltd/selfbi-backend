@@ -6,7 +6,7 @@ import requests
 from flask import Blueprint, jsonify, request, send_file, current_app as app
 
 from core import graph
-from core.common.utils import get_download_link
+from core.common.utils import get_download_link, token_required
 from core.common.variables import MG_BASE_URL, SERVER, USER_ID, SITE_ID, DRIVE_ID
 from core.models import Group, User_Group, Users, Requests_Access, Admin_Group, Project
 from core import db
@@ -18,6 +18,8 @@ import urllib
 import os
 import tempfile
 # import pythoncom
+from collections import defaultdict
+
 
 from sqlalchemy.orm import joinedload
 
@@ -44,7 +46,7 @@ def convert_to_base64(filepath):
     response.raise_for_status()
     return base64.b64encode(response.content).decode("utf-8")
 
-
+@token_required
 @services.route("/send/mail/attachment", methods=["POST"])
 async def send_mail_attachment():
     item_id = request.args.get("item_id", default=None, type=str)
@@ -119,7 +121,7 @@ async def send_mail_attachment():
     response = requests.request("POST", url, headers=headers, data=payload)
     return jsonify({"status": response.status_code})
 
-
+@token_required
 @services.route("/send/email", methods=["POST"])
 async def send_email():
     mail_to = request.args.get("mail_to", default=None, type=str)
@@ -158,7 +160,7 @@ async def send_email():
     response = requests.request("POST", url, headers=headers, data=payload)
     return {"status": response.status_code}
 
-
+@token_required
 @services.route("/create/folder", methods=["POST"])
 async def create_folder():
     parent_id = request.args.get("parent_id", default=None, type=str)
@@ -189,7 +191,7 @@ async def create_folder():
 
     return jsonify(create_data)
 
-
+@token_required
 @services.route("/copy/file", methods=["POST"])
 async def copy_file():
     item_id = request.args.get("item_id", default=None, type=str)
@@ -223,7 +225,7 @@ async def copy_file():
 
     return jsonify(response.json())
 
-
+@token_required
 @services.route("/request/accept", methods=["POST"])
 async def mail_request():
     user_id = request.args.get("user_id", default=None, type=int)
@@ -255,11 +257,24 @@ async def mail_request():
 
         url = f"{SERVER}/send/email"
         body = ""
-        if (len(granted_projects) == 0):
-            body += f"Already have access to the folders\n"
+        if len(granted_projects) == 0:
+            body += "<p>Already have access to the folders</p>\n"
         else:
+            # Group folders by project
+            projects = defaultdict(list)
             for folder in granted_projects:
-                body += f"Access to {folder.split('/')} has been granted\n"
+                print(f"Processing folder: {folder}")  # Debugging line
+                project, folder_name = folder.split('.')
+                print(f"Project: {project}, Folder: {folder_name}")  # Debugging line
+                projects[project].append(folder_name)
+
+            # Construct sentences
+            for project, folders in projects.items():
+                folders_list = ', '.join(folders)
+                body += f"<p>You have been granted access to {folders_list} from {project}</p>\n"
+                    
+        print(body)
+        
         params = {
             "mail_to": user_email,
             "subject": "Access Granted",
@@ -275,7 +290,7 @@ async def mail_request():
     except Exception as e:
         return jsonify(str(e))
 
-
+@token_required
 @services.route("/request/reject", methods=["GET", "POST"])
 async def mail_request_reject():
     user_id = request.args.get("user_id", default=None, type=int)
@@ -303,7 +318,7 @@ async def mail_request_reject():
     else:
         return jsonify("Error sending email")
 
-
+@token_required
 @services.route("/request/access", methods=["GET", "POST"])
 def request_access():
     user_id = request.form['user_id']
@@ -352,7 +367,7 @@ def request_access():
 
     return jsonify("Request sent")
 
-
+@token_required
 @services.route("/get/requests", methods=["GET"])
 def get_requests():
     user_id = request.args.get("user_id", default=None, type=int)
@@ -433,7 +448,7 @@ def excel_to_pdf(input_file, output_file, sheet_name):
         excel.Quit()
         os.remove(input_file)
 
-
+@token_required
 @services.route('/download/excel/image')
 async def get_download():
     item_id = request.args.get('item_id')
@@ -462,7 +477,7 @@ async def get_download():
     # Send the created image to the user
     return send_file(image_path, mimetype='image/png', as_attachment=True)
 
-
+@token_required
 @services.route('/resetDB')
 def reset_db():
     db.reflect()
@@ -470,7 +485,7 @@ def reset_db():
     db.create_all()
     return jsonify("DB Reset")
 
-
+@token_required
 @services.route("/fullReset")
 def fullReset():
     with app.test_client() as client:
