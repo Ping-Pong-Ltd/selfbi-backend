@@ -150,7 +150,7 @@ def send_email(user_id):
             body = f'''{html_content}'''
             params = {
                 "mail_to": user_email,
-                "subject": "Project Approval Request",
+                "subject": "Verify your email address",
                 "body": body,
             }
             response = requests.request("POST", url, params=params)
