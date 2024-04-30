@@ -6,7 +6,7 @@ from flask import Blueprint, jsonify, request
 
 from core import graph, db
 from core.models import File
-from core.common.utils import get_download_link
+from core.common.utils import get_download_link, token_required
 from core.common.variables import SITE_ID, DRIVE_ID, MG_BASE_URL
 
 import base64
@@ -19,7 +19,7 @@ from zipfile import ZipFile
 
 excel = Blueprint("excel", __name__)
 
-
+@token_required
 @excel.route("/upload_excel", methods=["POST"])
 async def upload_excel():
     project_id = request.args.get("project_id", default=None, type=str)
@@ -45,7 +45,7 @@ async def upload_excel():
 
     return response.json()
 
-
+@token_required
 @excel.route("/download_file", methods=["GET"])
 async def download_file():
     item_id = request.args.get("item_id", default=None, type=str)
@@ -56,7 +56,7 @@ async def download_file():
 
     return str(await get_download_link(item_id, format))
 
-
+@token_required
 @excel.route("/copy_excel", methods=["POST"])
 async def copy_excel():
     user_id = request.form["user_id"]
@@ -154,7 +154,7 @@ async def copy_excel():
 
     return jsonify(msg)
 
-
+@token_required
 @excel.route("/list_worksheets", methods=["GET"])
 async def list_worksheets():
     item_id = request.args.get("item_id", default=None, type=str)
@@ -171,7 +171,7 @@ async def list_worksheets():
 
     return response.json()['value']
 
-
+@token_required
 @excel.route("/chart_data", methods=["GET"])
 async def chart_data():
     item_id = request.args.get("item_id", default=None, type=str)
