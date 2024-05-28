@@ -20,8 +20,8 @@ from core.common.utils import create_folder, token_required
 dashboard = Blueprint("dashboard", __name__)
 
 
-@token_required
 @dashboard.route("/user/projects")
+@token_required
 async def list_user_projects():
     user_id = request.args.get("user_id", default=None, type=str)
     endpoint = "/drive/root:/SelfBI:/children"
@@ -57,8 +57,8 @@ async def list_user_projects():
 
     return jsonify(response_data)
 
-@token_required
 @dashboard.route("/projects")
+@token_required
 async def list_projects():
     endpoint = "/drive/root:/SelfBI:/children"
 
@@ -85,8 +85,8 @@ async def list_projects():
     
     return jsonify(response_data)
 
-@token_required
 @dashboard.route("/folders")
+@token_required
 async def list_folders():
     project_name = request.args.get("project_name", default=None, type=str)
 
@@ -114,8 +114,8 @@ async def list_folders():
 
     return jsonify({project_name: folders})
 
-@token_required
 @dashboard.route("/files")
+@token_required
 async def list_files():
     project_name = request.args.get("project_name", default=None, type=str)
     folder_name = request.args.get("folder_name", default=None, type=str)
@@ -190,8 +190,8 @@ async def list_files():
 
     return jsonify(excel_file_dict)
 
-@token_required
 @dashboard.route("/create_project", methods=["POST"])
+@token_required
 async def create_project():
     # Get data from request
     data = request.get_json()
@@ -249,8 +249,8 @@ async def create_project():
     return jsonify({"message": "Project and folders created successfully"}), 200
 
 
-@token_required
 @dashboard.route("/get_children")
+@token_required
 async def get_children():
     item_id = request.args.get("item_id", default=None, type=str)
     if not item_id:
@@ -283,8 +283,8 @@ async def get_children():
 
     return jsonify(folders)
 
-@token_required
 @dashboard.route("/get_group_users")
+@token_required
 async def get_group_users():
     group_name = request.args.get("group_name", default=None, type=str)
     if not group_name:

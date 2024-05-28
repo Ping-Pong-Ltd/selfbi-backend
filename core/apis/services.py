@@ -46,8 +46,8 @@ def convert_to_base64(filepath):
     response.raise_for_status()
     return base64.b64encode(response.content).decode("utf-8")
 
-@token_required
 @services.route("/send/mail/attachment", methods=["POST"])
+@token_required
 async def send_mail_attachment():
     item_id = request.args.get("item_id", default=None, type=str)
     mail_to = request.args.get("mail_to", default=None, type=str)
@@ -121,8 +121,8 @@ async def send_mail_attachment():
     response = requests.request("POST", url, headers=headers, data=payload)
     return jsonify({"status": response.status_code})
 
-@token_required
 @services.route("/send/email", methods=["POST"])
+@token_required
 async def send_email():
     mail_to = request.args.get("mail_to", default=None, type=str)
     body = request.args.get("body", default=None, type=str)
@@ -160,8 +160,8 @@ async def send_email():
     response = requests.request("POST", url, headers=headers, data=payload)
     return {"status": response.status_code}
 
-@token_required
 @services.route("/create/folder", methods=["POST"])
+@token_required
 async def create_folder():
     parent_id = request.args.get("parent_id", default=None, type=str)
     folder_name = request.args.get("folder_name", default=None, type=str)
@@ -191,8 +191,8 @@ async def create_folder():
 
     return jsonify(create_data)
 
-@token_required
 @services.route("/copy/file", methods=["POST"])
+@token_required
 async def copy_file():
     item_id = request.args.get("item_id", default=None, type=str)
     parent_id = request.args.get("parent_id", default=None, type=str)
@@ -225,8 +225,8 @@ async def copy_file():
 
     return jsonify(response.json())
 
-@token_required
 @services.route("/request/accept", methods=["POST"])
+@token_required
 async def mail_request():
     user_id = request.args.get("user_id", default=None, type=int)
     folder_names = request.args.get("folder_names", default=None, type=str)
@@ -290,8 +290,8 @@ async def mail_request():
     except Exception as e:
         return jsonify(str(e))
 
-@token_required
 @services.route("/request/reject", methods=["GET", "POST"])
+@token_required
 async def mail_request_reject():
     user_id = request.args.get("user_id", default=None, type=int)
 
@@ -318,8 +318,8 @@ async def mail_request_reject():
     else:
         return jsonify("Error sending email")
 
-@token_required
 @services.route("/request/access", methods=["GET", "POST"])
+@token_required
 def request_access():
     user_id = request.form['user_id']
     project_ids = request.form['project_ids']
@@ -367,8 +367,8 @@ def request_access():
 
     return jsonify("Request sent")
 
-@token_required
 @services.route("/get/requests", methods=["GET"])
+@token_required
 def get_requests():
     user_id = request.args.get("user_id", default=None, type=int)
     if not user_id:
@@ -448,8 +448,8 @@ def excel_to_pdf(input_file, output_file, sheet_name):
         excel.Quit()
         os.remove(input_file)
 
-@token_required
 @services.route('/download/excel/image')
+@token_required
 async def get_download():
     item_id = request.args.get('item_id')
     sheet_name = request.args.get('sheet_name')
@@ -477,16 +477,16 @@ async def get_download():
     # Send the created image to the user
     return send_file(image_path, mimetype='image/png', as_attachment=True)
 
-@token_required
 @services.route('/resetDB')
+@token_required
 def reset_db():
     db.reflect()
     db.drop_all()
     db.create_all()
     return jsonify("DB Reset")
 
-@token_required
 @services.route("/fullReset")
+@token_required
 def fullReset():
     with app.test_client() as client:
         client.get('/resetDB')
