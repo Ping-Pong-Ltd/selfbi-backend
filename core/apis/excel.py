@@ -19,8 +19,8 @@ from zipfile import ZipFile
 
 excel = Blueprint("excel", __name__)
 
-@token_required
 @excel.route("/upload_excel", methods=["POST"])
+@token_required
 async def upload_excel():
     project_id = request.args.get("project_id", default=None, type=str)
 
@@ -45,8 +45,8 @@ async def upload_excel():
 
     return response.json()
 
-@token_required
 @excel.route("/download_file", methods=["GET"])
+@token_required
 async def download_file():
     item_id = request.args.get("item_id", default=None, type=str)
     format = request.args.get("format", default=None, type=str)
@@ -56,8 +56,8 @@ async def download_file():
 
     return str(await get_download_link(item_id, format))
 
-@token_required
 @excel.route("/copy_excel", methods=["POST"])
+@token_required
 async def copy_excel():
     user_id = request.form["user_id"]
     item_id = request.form["item_id"]
@@ -154,8 +154,8 @@ async def copy_excel():
 
     return jsonify(msg)
 
-@token_required
 @excel.route("/list_worksheets", methods=["GET"])
+@token_required
 async def list_worksheets():
     item_id = request.args.get("item_id", default=None, type=str)
 
@@ -171,8 +171,8 @@ async def list_worksheets():
 
     return response.json()['value']
 
-@token_required
 @excel.route("/chart_data", methods=["GET"])
+@token_required
 async def chart_data():
     item_id = request.args.get("item_id", default=None, type=str)
     worksheet_name = request.args.get("worksheet_name", default=None, type=str)
