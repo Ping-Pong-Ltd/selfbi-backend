@@ -122,7 +122,6 @@ async def send_mail_attachment():
     return jsonify({"status": response.status_code})
 
 @services.route("/send/email", methods=["POST"])
-@token_required
 async def send_email():
     mail_to = request.args.get("mail_to", default=None, type=str)
     body = request.args.get("body", default=None, type=str)
