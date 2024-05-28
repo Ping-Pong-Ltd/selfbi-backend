@@ -58,7 +58,6 @@ async def list_user_projects():
     return jsonify(response_data)
 
 @dashboard.route("/projects")
-@token_required
 async def list_projects():
     endpoint = "/drive/root:/SelfBI:/children"
 
@@ -250,7 +249,6 @@ async def create_project():
 
 
 @dashboard.route("/get_children")
-@token_required
 async def get_children():
     item_id = request.args.get("item_id", default=None, type=str)
     if not item_id:
