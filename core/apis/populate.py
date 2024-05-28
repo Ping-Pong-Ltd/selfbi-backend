@@ -18,6 +18,8 @@ from core.models import (
     Role
 )
 
+from core.common.variables import SERVER
+
 populate = Blueprint("populate", __name__)
 
 @populate.route("/populate/all")
@@ -114,7 +116,7 @@ def populate_users():
 
 @populate.route("/populate/projects")
 async def populate_projects():
-    endpoint = "http://127.0.0.1:8080/projects"
+    endpoint = f"{SERVER}/projects"
     response = requests.request("GET", endpoint)
     data = json.loads(response.text)
     for item in data:
@@ -158,7 +160,7 @@ def worker_to_add_file(BASE_URL, id, project_id, user_ids):
 
 @populate.route("/populate/files")
 async def populate_files():
-    BASE_URL = "http://127.0.0.1:8080"
+    BASE_URL = SERVER
     PROJECTS_ENDPOINT = "/projects"
 
     projects_response = requests.get(BASE_URL + PROJECTS_ENDPOINT)
@@ -243,12 +245,12 @@ def generate_random_boolean(prob_true):
 def populate_file_persmissions_groups():
     projects = Project.query.all()
     for project in projects:
-        url = f"http://127.0.0.1:8080/get_children?item_id={project.id}"
+        url = f"{SERVER}/get_children?item_id={project.id}"
         response = requests.request("GET", url)
         data = response.json()
         name_query = project.name +"."
         for item in data:
-            url = f"http://127.0.0.1:8080/get_children?item_id={item['id']}"
+            url = f"{SERVER}/get_children?item_id={item['id']}"
             response = requests.request("GET", url)
             data_file = response.json()
             if item["name"] == "Sandbox":

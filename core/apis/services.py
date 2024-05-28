@@ -319,7 +319,6 @@ async def mail_request_reject():
         return jsonify("Error sending email")
 
 @services.route("/request/access", methods=["GET", "POST"])
-@token_required
 def request_access():
     user_id = request.form['user_id']
     project_ids = request.form['project_ids']
@@ -368,7 +367,6 @@ def request_access():
     return jsonify("Request sent")
 
 @services.route("/get/requests", methods=["GET"])
-@token_required
 def get_requests():
     user_id = request.args.get("user_id", default=None, type=int)
     if not user_id:
@@ -478,7 +476,6 @@ async def get_download():
     return send_file(image_path, mimetype='image/png', as_attachment=True)
 
 @services.route('/resetDB')
-@token_required
 def reset_db():
     db.reflect()
     db.drop_all()
@@ -486,7 +483,6 @@ def reset_db():
     return jsonify("DB Reset")
 
 @services.route("/fullReset")
-@token_required
 def fullReset():
     with app.test_client() as client:
         client.get('/resetDB')
