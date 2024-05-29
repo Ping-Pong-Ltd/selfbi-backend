@@ -37,3 +37,6 @@ SQL_ACLCHEMY_KEY = os.getenv("SQL_ACLCHEMY_KEY")
 
 # Server
 SERVER = os.getenv("SERVER")
+
+#CLIENT URL
+CLIENT_URL = os.getenv("CLIENT_URL")

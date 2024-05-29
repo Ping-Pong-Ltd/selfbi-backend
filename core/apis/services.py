@@ -7,7 +7,7 @@ from flask import Blueprint, jsonify, request, send_file, current_app as app
 
 from core import graph
 from core.common.utils import get_download_link, token_required
-from core.common.variables import MG_BASE_URL, SERVER, USER_ID, SITE_ID, DRIVE_ID
+from core.common.variables import MG_BASE_URL, SERVER, USER_ID, SITE_ID, DRIVE_ID, CLIENT_URL
 from core.models import Group, User_Group, Users, Requests_Access, Admin_Group, Project
 from core import db
 from core.common.utils import get_download_link
@@ -279,7 +279,7 @@ async def mail_request():
             "subject": "Access Granted",
             "body": body,
         }
-        response = requests.request("POST", url, params=params)
+        response = requests.request("POST", url, params=params, verify=False)
 
         if response.status_code == 200:
             return jsonify("User added to the group")
@@ -310,7 +310,7 @@ async def mail_request_reject():
         "subject": "Access Denied",
         "body": body,
     }
-    response = requests.request("POST", url, params=params)
+    response = requests.request("POST", url, params=params, verify=False)
 
     if response.status_code == 200:
         return jsonify("Email sent")
@@ -350,9 +350,9 @@ def request_access():
 
     html_content = html_content.replace("{users_data_name}", users_data_name)
     html_content = html_content.replace(
-        "http://localhost:3000/requestPage?user_id={user_id}", f"http://localhost:3000/requestPage?user_id={user_id}")
+        "http://localhost:3000/requestPage?user_id={user_id}", f"{CLIENT_URL}/requestPage?user_id={user_id}")
     html_content = html_content.replace(
-        "http://localhost:8080/access/reject?user_id={user_id}", f"http://localhost:8080/access/reject?user_id={user_id}")
+        "http://localhost:8080/access/reject?user_id={user_id}", f"{CLIENT_URL}/access/reject?user_id={user_id}")
     body = f'''{html_content}'''
 
     for user_email in user_emails:
@@ -361,7 +361,7 @@ def request_access():
             "subject": "Project Approval Request",
             "body": body,
         }
-        requests.request("POST", url, params=params)
+        requests.request("POST", url, params=params, verify=False)
 
     return jsonify("Request sent")
 

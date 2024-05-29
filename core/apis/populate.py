@@ -117,7 +117,7 @@ def populate_users():
 @populate.route("/populate/projects")
 async def populate_projects():
     endpoint = f"{SERVER}/projects"
-    response = requests.request("GET", endpoint)
+    response = requests.request("GET", endpoint, verify=False)
     data = json.loads(response.text)
     for item in data:
         new_project = Project(
@@ -163,7 +163,7 @@ async def populate_files():
     BASE_URL = SERVER
     PROJECTS_ENDPOINT = "/projects"
 
-    projects_response = requests.get(BASE_URL + PROJECTS_ENDPOINT)
+    projects_response = requests.get(BASE_URL + PROJECTS_ENDPOINT, verify=False)
     projects_data = projects_response.json()
 
     users = Users.query.all()
@@ -246,12 +246,12 @@ def populate_file_persmissions_groups():
     projects = Project.query.all()
     for project in projects:
         url = f"{SERVER}/get_children?item_id={project.id}"
-        response = requests.request("GET", url)
+        response = requests.request("GET", url, verify=False)
         data = response.json()
         name_query = project.name +"."
         for item in data:
             url = f"{SERVER}/get_children?item_id={item['id']}"
-            response = requests.request("GET", url)
+            response = requests.request("GET", url, verify=False)
             data_file = response.json()
             if item["name"] == "Sandbox":
                 continue
