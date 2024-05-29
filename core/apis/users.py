@@ -153,7 +153,7 @@ def send_email(user_id):
                 "subject": "Verify your email address",
                 "body": body,
             }
-            response = requests.request("POST", url, params=params)
+            response = requests.request("POST", url, params=params, verify=False)
             response.raise_for_status()
             return {"message": "Email sent successfully"}, 200
     except requests.exceptions.RequestException as e:
