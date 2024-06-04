@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, make_response
+from flask import Blueprint, jsonify, make_response, render_template
 from flask import request, current_app as app
 from flask_login import login_user, current_user, logout_user, login_required
 import requests
@@ -12,6 +12,7 @@ import requests.exceptions
 
 
 users = Blueprint("users", __name__)
+
 
 schema = {
     "type": "object",
@@ -43,6 +44,10 @@ def register():
 
     # Continue with the registration process
     try:
+        user = Users.query.filter_by(email=data["email"]).first()
+        if user:
+            return jsonify({"message": "User already exists"}), 409
+        
         hash_password = generate_password_hash(data["password"])[:256]
         new_user = Users(
             email=data["email"],
@@ -70,12 +75,11 @@ def register():
                     "last_login": user.last_login,
                 }
             }
-        )
+        ), 201
     except Exception as e:
         return jsonify(
             {"message": "Error occurred during registration", "error": str(e)}
         )
-
 
 @users.route("/auth/login", methods=["GET", "POST"])
 def login():
@@ -84,27 +88,26 @@ def login():
     try:
         jsonschema.validate(data, schema)
     except jsonschema.ValidationError as e:
-        return jsonify({"message": "Invalid data format", "error": str(e)})
+        return jsonify({"message": "Invalid data format", "error": str(e)}), 400
 
     user = Users.query.filter_by(email=data["email"]).first()
-    
+
     if not user:
-        return jsonify({"message": "Register User"}), 401
+        return jsonify({"message": "User not registered"}), 401
 
-    if user and check_password_hash(user.password, data["password"]):
-        request_status = Requests_Access.query.filter_by(user_id=user.id).all()
-        if not user.isVerified:
-            return {"message": "User is not verified. Please contact the admin."} , 401
-        
-        for req in request_status:
-            if req.status == False:
-                return {"message": "Request is pending. Please wait for approval."}, 401
-            
+    if not user.isVerified:
+        return jsonify({"message": "Email not verified"}), 401
 
+    request_status = Requests_Access.query.filter_by(user_id=user.id).all()
+    for req in request_status:
+        if not req.status:
+            return jsonify({"message": "Request is pending. Please wait for approval."}), 401
+
+    if check_password_hash(user.password, data["password"]):
         token = generate_token(user)
-
         role = Role.query.get(user.role_id)
-        respone = {
+
+        response = {
             "message": {
                 "user": user.email,
                 "isAdmin": user.isAdmin,
@@ -120,9 +123,9 @@ def login():
         db.session.commit()
         login_user(user)
 
-        return make_response(jsonify(respone))
+        return make_response(jsonify(response))
     else:
-        return jsonify({"message": "Invalid credentials"})
+        return jsonify({"message": "Invalid credentials"}), 401
 
 
 
@@ -132,7 +135,7 @@ def verify_email(token):
     if user:
         user.isVerified = True
         db.session.commit()
-        return jsonify({"message": "Email verified successfully"})
+        return render_template("successpage.html")
     
 
 
@@ -146,7 +149,7 @@ def send_email(user_id):
             url = f"{SERVER}/send/email"
             with open("core/templates/verifyTemplate.html", "r") as file:
                 html_content = file.read()
-            html_content = html_content.replace("http://localhost:3000/verify_email/<token>", f"http://localhost:8080/verify_email/{user_id}")
+            html_content = html_content.replace("http://localhost:3000/verify_email/<token>", f"{SERVER}/verify_email/{user_id}")
             body = f'''{html_content}'''
             params = {
                 "mail_to": user_email,

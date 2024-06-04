@@ -9,7 +9,6 @@ def home_html():
     return render_template('home.html')
 
 @home.route('/api')
-@token_required
-def home_latest(current_user):
+def home_latest():
     return jsonify({'message' : 'Hello Server'})
 
