@@ -1,22 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Account Verification Successful</title>
-</head>
-<body style="font-family: Arial, sans-serif; background-color: #f9f9f9; color: #333;">
-    <div style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff; border: 1px solid #ddd; border-radius: 4px;">
-        <h2 style="color: #4CAF50;">Account Verification Successful</h2>
-        <p>Dear User,</p>
-        <p>Congratulations! Your account verification has been successfully completed.</p>
-        <p>You can now access your account by clicking the link below to go to the login page:</p>
-        <p style="text-align: center;">
-            <a href="http://localhost:3000/signin" style="display: inline-block; padding: 10px 20px; font-size: 16px; color: #ffffff; background-color: #4CAF50; text-decoration: none; border-radius: 4px;">Login Page</a>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body>
+    <div
+      class="flex min-h-[80dvh] flex-col items-center justify-center gap-6 px-4 md:px-6"
+    >
+      <div class="space-y-2 text-center">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="#dcfce7"
+          stroke="currentColor"
+          stroke-width="1"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="mx-auto h-16 w-16 text-green-100"
+        >
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="m9 12 2 2 4-4" class="text-green-500"></path>
+        </svg>
+        <h1 class="text-3xl font-bold">Verification Successful</h1>
+        <p class="text-gray-500">
+          Congratulations! Your account has been successfully verified. Please
+          note, if your request has not been verified by the admin yet, kindly
+          wait until the admin completes your verification. You will be notified
+          once the verification is fully processed. If you have any questions or
+          need further assistance, please do not hesitate to contact our support
+          team.
         </p>
-        <p>Please note, if your request has not been verified by the admin yet, kindly wait until the admin completes your verification. You will be notified once the verification is fully processed.</p>
-        <p>If you have any questions or need further assistance, please do not hesitate to contact our support team.</p>
-        <p>Best regards,<br>SelfBI<br>selfbi@support.com</p>
+      </div>
+      <a
+        class="inline-flex h-10 items-center justify-center rounded-md bg-gray-900 px-8 text-sm font-medium text-gray-50 shadow transition-colors hover:bg-gray-900/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-950 disabled:pointer-events-none disabled:opacity-50"
+        href="http://localhost:3000/signin"
+        rel="ugc"
+      >
+        Go to Login
+      </a>
     </div>
-</body>
+  </body>
 </html>
