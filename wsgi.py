@@ -13,6 +13,6 @@ with app.app_context():
 if __name__ == "__main__":
     if RUN_MODE == "development":
         # app.run()
-        app.run(host="0.0.0.0", port=8080, debug=True,ssl_context=('cert.pem', 'key.pem'))
+        app.run(host="0.0.0.0", port=8000, debug=True)
     else:
-        serve(app, host="0.0.0.0", port=8080, threads=multiprocessing.cpu_count() *2)
+        serve(app, host="0.0.0.0", port=8000, threads=multiprocessing.cpu_count() *2)

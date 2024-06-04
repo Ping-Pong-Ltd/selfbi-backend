@@ -47,7 +47,7 @@ def convert_to_base64(filepath):
     return base64.b64encode(response.content).decode("utf-8")
 
 @services.route("/send/mail/attachment", methods=["POST"])
-@token_required
+
 async def send_mail_attachment():
     item_id = request.args.get("item_id", default=None, type=str)
     mail_to = request.args.get("mail_to", default=None, type=str)
@@ -160,7 +160,7 @@ async def send_email():
     return {"status": response.status_code}
 
 @services.route("/create/folder", methods=["POST"])
-@token_required
+
 async def create_folder():
     parent_id = request.args.get("parent_id", default=None, type=str)
     folder_name = request.args.get("folder_name", default=None, type=str)
@@ -191,7 +191,7 @@ async def create_folder():
     return jsonify(create_data)
 
 @services.route("/copy/file", methods=["POST"])
-@token_required
+
 async def copy_file():
     item_id = request.args.get("item_id", default=None, type=str)
     parent_id = request.args.get("parent_id", default=None, type=str)
@@ -225,7 +225,7 @@ async def copy_file():
     return jsonify(response.json())
 
 @services.route("/request/accept", methods=["POST"])
-@token_required
+
 async def mail_request():
     user_id = request.args.get("user_id", default=None, type=int)
     folder_names = request.args.get("folder_names", default=None, type=str)
@@ -257,7 +257,7 @@ async def mail_request():
         url = f"{SERVER}/send/email"
         body = ""
         if len(granted_projects) == 0:
-            body += "<p>Already have access to the folders</p>\n"
+            body += "Already have access to the folders\n"
         else:
             # Group folders by project
             projects = defaultdict(list)
@@ -266,13 +266,35 @@ async def mail_request():
                 project, folder_name = folder.split('.')
                 print(f"Project: {project}, Folder: {folder_name}")  # Debugging line
                 projects[project].append(folder_name)
-
+                
             # Construct sentences
             for project, folders in projects.items():
                 folders_list = ', '.join(folders)
-                body += f"<p>You have been granted access to {folders_list} from {project}</p>\n"
+                body += f"\n{project}: {folders_list}\n"
+                
+        
+        replace = f"""
+        \nDear User,\n
+            \tWe are pleased to inform you that your access request has been approved.\n
+            
+            \tYou have been granted access to the following folders in the respective projects:\n
+            
+            {body}
+            
+            \tIf you already have access to the requested folders, no further action is required.\n
+            
+            \tPlease let us know if you have any questions or need further assistance.\n
+        
+        Best regards,\n
+        SelfBI\n
+        """
                     
-        print(body)
+        
+        with open("core/templates/requestAccept.html", "r") as file:
+            html_content = file.read()
+        
+        html_content = html_content.replace("[Project_data]", replace)
+        body = f'''{html_content}'''
         
         params = {
             "mail_to": user_email,
@@ -290,29 +312,54 @@ async def mail_request():
         return jsonify(str(e))
 
 @services.route("/request/reject", methods=["GET", "POST"])
-@token_required
 async def mail_request_reject():
     user_id = request.args.get("user_id", default=None, type=int)
 
     if not user_id:
         return jsonify("User ID is required")
 
-    db.session.query(Users).filter(Users.id == user_id).delete()
-    db.session.commit()
+    
 
     url = f"{SERVER}/send/email"
     user_email = Users.query.get(user_id).email
+    with open("core/templates/requestdecline.html", "r") as file:
+        html_content = file.read()
 
-    body = f"Access to has been denied \n\nYour access request has been denied by the admin\nCreate New Account to request access again\n"
+
+    replace = """
+    \nDear User,\n
+
+        \tThis is an automated message to inform you that your recent access request has been denied by the system administrator. Consequently, your current account has been deleted.\n
+
+        \tTo regain access, please create a new account and submit a new access request for review.
+
+        \tWe apologize for any inconvenience this may cause and appreciate your understanding.\n
+
+        \tThis is a no-reply email. For further assistance, please contact our support team.\n
+
+    Best regards,\n
+    SelfBI\n
+    """
+    
+    html_content = html_content.replace("declined_primary", replace)
+    body = f'''{html_content}'''
+    
 
     params = {
         "mail_to": user_email,
-        "subject": "Access Denied",
+        "subject": " Access Request Denied and Account Deletion Notification",
         "body": body,
     }
     response = requests.request("POST", url, params=params, verify=False)
 
     if response.status_code == 200:
+        # Delete related entries in the requests_access table
+        db.session.query(Requests_Access).filter(Requests_Access.user_id == user_id).delete()
+
+        # Delete the user
+        db.session.query(Users).filter(Users.id == user_id).delete()
+        db.session.commit()
+        
         return jsonify("Email sent")
     else:
         return jsonify("Error sending email")
@@ -352,7 +399,7 @@ def request_access():
     html_content = html_content.replace(
         "http://localhost:3000/requestPage?user_id={user_id}", f"{CLIENT_URL}/requestPage?user_id={user_id}")
     html_content = html_content.replace(
-        "http://localhost:8080/access/reject?user_id={user_id}", f"{CLIENT_URL}/access/reject?user_id={user_id}")
+        "http://localhost:8080/access/reject?user_id={user_id}", f"{SERVER}/request/reject?user_id={user_id}")
     body = f'''{html_content}'''
 
     for user_email in user_emails:
@@ -446,7 +493,7 @@ def excel_to_pdf(input_file, output_file, sheet_name):
         os.remove(input_file)
 
 @services.route('/download/excel/image')
-@token_required
+
 async def get_download():
     item_id = request.args.get('item_id')
     sheet_name = request.args.get('sheet_name')
