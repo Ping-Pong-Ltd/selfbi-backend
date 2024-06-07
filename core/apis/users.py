@@ -3,7 +3,7 @@ from flask import request, current_app as app
 from flask_login import login_user, current_user, logout_user, login_required
 import requests
 from werkzeug.security import generate_password_hash, check_password_hash
-from core.common.variables import SERVER
+from core.common.variables import CLIENT_URL, SERVER
 from core.models import Users, Requests_Access, Role
 from core import db
 from datetime import datetime, timedelta, timezone
@@ -135,7 +135,8 @@ def verify_email(token):
     if user:
         user.isVerified = True
         db.session.commit()
-        return render_template("successpage.html")
+        client_url = f"{CLIENT_URL}/signin"
+        return render_template("successpage.html",client_url=client_url)
     
 
 
