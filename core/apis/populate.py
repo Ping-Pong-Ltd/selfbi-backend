@@ -133,7 +133,7 @@ async def populate_projects():
 
 def worker_to_add_file(BASE_URL, id, project_id, user_ids):
     url = f"{BASE_URL}/get_children?item_id={id}"
-    response = requests.request("GET", url)
+    response = requests.request("GET", url, verify=False)
     data = response.json()
     for item in data:
         if "isFolder" not in item:
